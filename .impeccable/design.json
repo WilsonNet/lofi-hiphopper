@@ -1,0 +1,448 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T19:07:52Z",
+  "title": "Design System: lofi-hiphopper",
+  "extensions": {
+    "colorMeta": {
+      "ultraviolet": {
+        "role": "primary",
+        "displayName": "Ultraviolet",
+        "canonical": "#c9a7ff",
+        "tonalRamp": [
+          "#200a43",
+          "#370b7b",
+          "#4d08b9",
+          "#6101fb",
+          "#863ef7",
+          "#aa7cf4",
+          "#ceb5f5",
+          "#f0eafb"
+        ]
+      },
+      "hot-pink": {
+        "role": "secondary",
+        "displayName": "Hot Pink",
+        "canonical": "#ff86c2",
+        "tonalRamp": [
+          "#430a26",
+          "#7b0b43",
+          "#b90860",
+          "#fb017d",
+          "#f73e9a",
+          "#f47cb7",
+          "#f5b5d5",
+          "#fbeaf2"
+        ]
+      },
+      "peach-glow": {
+        "role": "tertiary",
+        "displayName": "Peach Glow",
+        "canonical": "#ffc48a",
+        "tonalRamp": [
+          "#43260a",
+          "#7b430b",
+          "#b96008",
+          "#fb7d01",
+          "#f79a3e",
+          "#f4b77c",
+          "#f5d5b5",
+          "#fbf2ea"
+        ]
+      },
+      "mint-signal": {
+        "role": "tertiary",
+        "displayName": "Mint Signal",
+        "canonical": "#7fe7d4",
+        "tonalRamp": [
+          "#133a33",
+          "#1d6a5c",
+          "#249d87",
+          "#28d3b4",
+          "#5cdac3",
+          "#8fe1d2",
+          "#bfebe3",
+          "#ecf8f6"
+        ]
+      },
+      "signal-blue": {
+        "role": "tertiary",
+        "displayName": "Signal Blue",
+        "canonical": "#6d8bff",
+        "tonalRamp": [
+          "#0a1543",
+          "#0b227b",
+          "#082db9",
+          "#0134fb",
+          "#3e64f7",
+          "#7c95f4",
+          "#b5c2f5",
+          "#eaedfb"
+        ]
+      },
+      "midnight": {
+        "role": "neutral",
+        "displayName": "Midnight",
+        "canonical": "#07070e",
+        "tonalRamp": [
+          "#1d1d30",
+          "#313156",
+          "#43437e",
+          "#5454a7",
+          "#7c7cba",
+          "#a4a4cc",
+          "#cacae0",
+          "#efeff5"
+        ]
+      },
+      "panel-ink": {
+        "role": "neutral",
+        "displayName": "Panel Ink",
+        "canonical": "#0d0d18",
+        "tonalRamp": [
+          "#1e1e2f",
+          "#333354",
+          "#46467b",
+          "#5959a3",
+          "#7f7fb6",
+          "#a6a6ca",
+          "#ccccdf",
+          "#f0f0f5"
+        ]
+      },
+      "panel-raised": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#131322",
+        "tonalRamp": [
+          "#1e1e2e",
+          "#343453",
+          "#484879",
+          "#5a5aa1",
+          "#8181b5",
+          "#a7a7c9",
+          "#ccccde",
+          "#f0f0f5"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#23233a",
+        "tonalRamp": [
+          "#1f1f2d",
+          "#363651",
+          "#4b4b76",
+          "#5f5f9d",
+          "#8484b2",
+          "#a9a9c7",
+          "#cdcddd",
+          "#f0f0f4"
+        ]
+      },
+      "code-void": {
+        "role": "neutral",
+        "displayName": "Code Void",
+        "canonical": "#090911",
+        "tonalRamp": [
+          "#1d1d2f",
+          "#323255",
+          "#45457c",
+          "#5757a4",
+          "#7e7eb7",
+          "#a6a6ca",
+          "#cbcbdf",
+          "#f0f0f5"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#e9e4ff",
+        "tonalRamp": [
+          "#140a43",
+          "#200b7b",
+          "#2908b9",
+          "#2f01fb",
+          "#613ef7",
+          "#927cf4",
+          "#c1b5f5",
+          "#edeafb"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#8a85a3",
+        "tonalRamp": [
+          "#24222a",
+          "#3e3c4b",
+          "#58546d",
+          "#726c8f",
+          "#928ea8",
+          "#b2b0c0",
+          "#d2d1da",
+          "#f1f1f3"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
+        "canonical": "#7c7799",
+        "tonalRamp": [
+          "#23222a",
+          "#3e3b4b",
+          "#58546d",
+          "#716c90",
+          "#918ea8",
+          "#b2afc1",
+          "#d2d1da",
+          "#f1f1f3"
+        ]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Success",
+        "canonical": "#8fe7b0",
+        "tonalRamp": [
+          "#143922",
+          "#1f683a",
+          "#279a52",
+          "#2dcf69",
+          "#5fd78c",
+          "#91dfae",
+          "#c1ead0",
+          "#edf8f1"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Cream",
+        "canonical": "#fff3dd",
+        "tonalRamp": [
+          "#432f0a",
+          "#7b540b",
+          "#b97a08",
+          "#fba201",
+          "#f7b63e",
+          "#f4ca7c",
+          "#f5deb5",
+          "#fbf5ea"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline only; tight mono, almost stacked."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles; short, declarative, sentence case."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Feature card and screen card headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Human explanation in Avenir Next; cap at 55-62ch."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Hero description; larger sans, 54ch cap."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Kickers, panel titles, and metadata; uppercase mono with open tracking."
+      },
+      "terminal": {
+        "displayName": "Terminal",
+        "purpose": "Content inside the terminal preview and key caps."
+      }
+    },
+    "shadows": [
+      {
+        "name": "terminal-ambient",
+        "value": "0 28px 90px rgba(0, 0, 0, 0.55), 0 0 80px rgba(123, 92, 255, 0.12)",
+        "purpose": "Lifts the terminal off the page and adds violet spill."
+      },
+      {
+        "name": "terminal-rim",
+        "value": "0 0 0 1px rgba(201, 167, 255, 0.04)",
+        "purpose": "Faint edge highlight on the terminal shell."
+      },
+      {
+        "name": "terminal-inset",
+        "value": "inset 0 0 60px rgba(201, 167, 255, 0.045)",
+        "purpose": "Screen bloom inside the terminal shell."
+      },
+      {
+        "name": "dialog-lift",
+        "value": "0 30px 80px rgba(0, 0, 0, 0.65)",
+        "purpose": "Shortcut dialog above the dimmed page."
+      },
+      {
+        "name": "status-glow",
+        "value": "0 0 12px rgba(143, 231, 176, 0.85)",
+        "purpose": "Live and silence status dots."
+      }
+    ],
+    "motion": [
+      {
+        "name": "live-pulse",
+        "value": "opacity 1 -> 0.35 -> 1, 2s ease-in-out infinite",
+        "purpose": "Pulsing live dot only."
+      },
+      {
+        "name": "control-transition",
+        "value": "border-color 140ms ease, background 140ms ease, transform 140ms ease",
+        "purpose": "Button and card hover states."
+      },
+      {
+        "name": "toast-transition",
+        "value": "opacity 160ms ease, transform 160ms ease",
+        "purpose": "Copy feedback toast."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "hero-stack",
+        "value": "1040px"
+      },
+      {
+        "name": "layout-stack",
+        "value": "860px"
+      },
+      {
+        "name": "mobile",
+        "value": "640px"
+      },
+      {
+        "name": "compact",
+        "value": "420px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single solid accent action, used for Install and Download latest.",
+      "html": "<button class=\"ds-btn-primary\">Install</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border: 1px solid transparent; border-radius: 6px; background: var(--accent); color: var(--bg); font-family: var(--mono); font-size: 0.9rem; font-weight: 700; line-height: 1.65; cursor: pointer; transition: background 140ms ease, border-color 140ms ease, transform 140ms ease; } .ds-btn-primary:hover { background: var(--pink); border-color: var(--pink); transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--peach); outline-offset: 4px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Bordered panel control for release and repository links.",
+      "html": "<a class=\"ds-btn-secondary\" href=\"#\">Download release <span aria-hidden=\"true\">\u2197</span></a>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--ink); font-family: var(--mono); font-size: 0.9rem; line-height: 1.65; text-decoration: none; transition: border-color 140ms ease, background 140ms ease, transform 140ms ease; } .ds-btn-secondary:hover { border-color: var(--accent); background: var(--panel-raised); transform: translateY(-1px); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--peach); outline-offset: 4px; }"
+    },
+    {
+      "name": "Instrument Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Hairline panel with an overlapping uppercase title, used for radio, signal, and config.",
+      "html": "<section class=\"ds-panel\"><span class=\"ds-panel-title\">RADIO</span><span class=\"ds-panel-hint\">j/k \u00b7 enter</span><ul class=\"ds-radio\"><li class=\"ds-selected\"><span>\u25b8</span><span class=\"ds-playing\">\u25cf</span> lofi hip hop</li><li><span></span><span>\u25cb</span> live now</li><li><span></span><span>\u25cb</span> synthwave radio</li><li><span></span><span>\u25cb</span> chillhop</li></ul></section>",
+      "css": ".ds-panel { position: relative; padding: 14px 11px 11px; border: 1px solid var(--border); border-radius: 6px; background: rgba(13, 13, 24, 0.94); color: var(--ink); font-family: var(--mono); } .ds-panel-title { position: absolute; top: -0.7em; left: 10px; padding: 0 6px; background: var(--panel); color: var(--accent); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.13em; line-height: 1.4; } .ds-panel-hint { position: absolute; top: -0.66em; right: 9px; padding: 0 6px; background: var(--panel); color: var(--dim); font-size: 0.62rem; } .ds-radio { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.76rem; line-height: 1.5; } .ds-radio li { display: flex; gap: 6px; padding: 3px 5px; border-radius: 4px; white-space: nowrap; } .ds-radio li span:first-child { display: inline-block; width: 13px; color: var(--accent); } .ds-radio li span:nth-child(2) { display: inline-block; width: 13px; color: var(--dim); } .ds-radio .ds-selected { background: linear-gradient(90deg, rgba(201, 167, 255, 0.16), rgba(201, 167, 255, 0.03)); color: var(--ink); } .ds-radio .ds-playing { color: var(--pink) !important; }"
+    },
+    {
+      "name": "Terminal Window",
+      "kind": "custom",
+      "refersTo": "terminal-shell",
+      "description": "The signature object: a tabindex-focusable terminal with traffic dots, instrument panels, and a live spectrum.",
+      "html": "<div class=\"ds-terminal\"><div class=\"ds-terminal-bar\"><span class=\"ds-traffic\"><i></i><i></i><i></i></span><span>lofi-hiphopper \u2014 120\u00d740</span><span class=\"ds-badge\">DEMO</span></div><div class=\"ds-terminal-screen\"><div class=\"ds-term-head\"><span class=\"ds-live-dot\"></span> lofi hiphopper <span class=\"ds-notice\">silence \u2192 sound</span><span class=\"ds-fill\">AUTO-FILL ON \u25cf FILLING</span></div><div class=\"ds-term-rule\"></div><div class=\"ds-term-grid\"><div class=\"ds-mini\"><span class=\"ds-mini-title\">RADIO</span><ul><li class=\"ds-selected\">\u25b8\u25cf lofi hip hop</li><li>\u25cb\u25cb live now</li><li>\u25cb\u25cb synthwave radio</li><li>\u25cb\u25cb chillhop</li></ul></div><div class=\"ds-mini\"><span class=\"ds-mini-title\">VISUALIZER</span><div class=\"ds-bars\"><i style=\"--h:22%\"></i><i style=\"--h:36%\"></i><i style=\"--h:58%\"></i><i style=\"--h:44%\"></i><i style=\"--h:70%\"></i><i style=\"--h:52%\"></i><i style=\"--h:86%\"></i><i style=\"--h:64%\"></i><i style=\"--h:40%\"></i><i style=\"--h:54%\"></i><i style=\"--h:72%\"></i><i style=\"--h:48%\"></i><i style=\"--h:62%\"></i><i style=\"--h:78%\"></i><i style=\"--h:56%\"></i><i style=\"--h:34%\"></i></div><div class=\"ds-axis\"><span>63</span><span>250</span><span>1k</span><span>4k</span><span>16k</span></div></div></div><div class=\"ds-now\"><span>NOW PLAYING</span><strong>Lofi Girl \u00b7 lofi hip hop radio</strong><span>LIVE vol 55%</span></div></div></div>",
+      "css": ".ds-terminal { position: relative; overflow: hidden; border: 1px solid #2d2b47; border-radius: 12px; background: linear-gradient(180deg, #11101b, #09090f); box-shadow: 0 0 0 1px rgba(201, 167, 255, 0.04), 0 28px 90px rgba(0, 0, 0, 0.55), 0 0 80px rgba(123, 92, 255, 0.12); color: var(--ink); font-family: var(--mono); font-size: 0.86rem; } .ds-terminal-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: #0a0a12; color: var(--dim); font-size: 0.72rem; } .ds-traffic { display: inline-flex; gap: 5px; } .ds-traffic i { width: 8px; height: 8px; border-radius: 50%; background: #ff7b8a; } .ds-traffic i:nth-child(2) { background: #ffc46b; } .ds-traffic i:nth-child(3) { background: #8fe7b0; } .ds-badge { margin-left: auto; color: var(--accent); } .ds-terminal-screen { padding: 16px 16px 13px; } .ds-term-head { display: flex; align-items: center; gap: 12px; font-size: 0.78rem; } .ds-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px rgba(143, 231, 176, 0.85); } .ds-notice { color: var(--muted); } .ds-fill { margin-left: auto; color: var(--muted); font-size: 0.7rem; } .ds-term-rule { height: 1px; margin: 11px 0 14px; background: linear-gradient(90deg, var(--accent), rgba(201, 167, 255, 0.16) 28%, var(--border)); } .ds-term-grid { display: grid; grid-template-columns: minmax(180px, 0.82fr) minmax(0, 1.52fr); gap: 12px; } .ds-mini { position: relative; padding: 14px 11px 11px; border: 1px solid var(--border); border-radius: 6px; background: rgba(13, 13, 24, 0.94); } .ds-mini-title { position: absolute; top: -0.7em; left: 10px; padding: 0 6px; background: var(--panel); color: var(--accent); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.13em; } .ds-mini ul { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.76rem; line-height: 1.5; } .ds-mini li { padding: 3px 5px; border-radius: 4px; white-space: nowrap; } .ds-mini .ds-selected { background: linear-gradient(90deg, rgba(201, 167, 255, 0.16), rgba(201, 167, 255, 0.03)); color: var(--ink); } .ds-bars { display: flex; align-items: flex-end; gap: 5px; height: 150px; padding: 12px 2px 4px; } .ds-bars i { flex: 1; height: var(--h); border-radius: 1px; background: linear-gradient(180deg, var(--peach), var(--pink) 45%, var(--accent)); } .ds-axis { display: flex; justify-content: space-between; padding: 4px 3px 0; color: var(--dim); font-size: 0.6rem; } .ds-now { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: baseline; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); font-size: 0.74rem; } .ds-now span:first-child { color: var(--pink); font-size: 0.64rem; letter-spacing: 0.12em; } .ds-now strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .ds-now span:last-child { color: var(--muted); font-size: 0.64rem; white-space: nowrap; }"
+    },
+    {
+      "name": "Key Cap",
+      "kind": "custom",
+      "refersTo": "kbd",
+      "description": "Physical-feeling mono key used inside prose and terminal hints.",
+      "html": "<kbd class=\"ds-kbd\">m</kbd> <span class=\"ds-kbd-note\">mute</span>",
+      "css": ".ds-kbd { display: inline-block; min-width: 1.45em; padding: 0 0.32em; border: 1px solid #34314d; border-bottom-color: #23213a; border-radius: 3px; background: var(--panel-raised); color: var(--accent); font-family: var(--mono); font-size: 0.86em; line-height: 1.5; text-align: center; } .ds-kbd-note { color: var(--dim); font-family: var(--mono); font-size: 0.66rem; }"
+    },
+    {
+      "name": "Code Block",
+      "kind": "custom",
+      "refersTo": "code-block",
+      "description": "Darker-than-panel command block with a copy control and muted comments.",
+      "html": "<pre class=\"ds-code\"><span class=\"ds-comment\"># runtime dependencies</span>\nbrew install mpv yt-dlp ffmpeg\n\n<span class=\"ds-comment\"># start filling silence</span>\nlofi-hiphopper</pre>",
+      "css": ".ds-code { position: relative; overflow: auto; margin: 0; padding: 16px 18px; border: 1px solid var(--border); border-radius: 6px; background: #090911; color: var(--ink); font-family: var(--mono); font-size: 0.82rem; line-height: 1.75; tab-size: 2; } .ds-comment { color: var(--dim); }"
+    },
+    {
+      "name": "FAQ Row",
+      "kind": "card",
+      "refersTo": "details",
+      "description": "Bordered disclosure row with a rotating triangle and sans answer.",
+      "html": "<details class=\"ds-faq\"><summary>What happens during a Zoom or Meet call?</summary><p>Any app with an active microphone stream holds playback immediately. With the default hold_mode: stop, the stream stops and re-resolves when the call ends.</p></details>",
+      "css": ".ds-faq { padding: 13px 0; border: 0; border-top: 1px solid var(--border); background: transparent; color: var(--ink); font-family: var(--mono); } .ds-faq[open] { border-top-color: rgba(201, 167, 255, 0.42); } .ds-faq summary { cursor: pointer; font-size: 0.9rem; list-style: none; } .ds-faq summary::-webkit-details-marker { display: none; } .ds-faq summary::before { content: \"?\"; display: inline-block; width: 1.2em; color: var(--accent); } .ds-faq[open] summary::before { content: \"!\"; color: var(--pink); } .ds-faq p { max-width: 80ch; margin: 8px 0 0 1.2em; color: var(--muted); font-family: var(--sans); font-size: 0.94rem; line-height: 1.65; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Mono text navigation with a pink GitHub link and optional version metadata.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">features</a><a href=\"#\">preview</a><a href=\"#\">install</a><a href=\"#\">faq</a><a class=\"ds-nav-github\" href=\"#\">github \u2197</a><span class=\"ds-nav-meta\">v0.3.2 \u00b7 macOS</span></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 22px; font-family: var(--mono); font-size: 0.82rem; } .ds-nav a { color: var(--muted); text-decoration: none; } .ds-nav a:hover { color: var(--ink); } .ds-nav .ds-nav-github { color: var(--pink); } .ds-nav-meta { padding-left: 20px; border-left: 1px solid var(--border); color: var(--dim); font-size: 0.8rem; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Late-Night Terminal",
+    "overview": "The system is a dark room with one screen awake. Most surfaces are near-black, flat, and separated by a single hairline; the terminal preview is the only object allowed to cast a deep shadow and a violet glow. The page should feel like a quiet desk at 1 a.m., not a product launch.\n\nThe voice is calm, nocturnal, and quietly playful. Mono type carries the interface and the headlines, so the page reads as software rather than a brochure. Avenir Next appears only for human explanation: the lede, section intros, card body, FAQ answers. That split keeps the terminal authority without making long prose feel like a changelog.\n\nColor behaves like a spectrum, not a brand wash. Ultraviolet, hot pink, and peach are concentrated in the signal: the colored headline, the primary action, the visualizer, the live dots. The rest of the page stays in midnight, ink, muted grey, and one hairline violet. Motion is scarce. The spectrum, the pulsing live dot, and a one-pixel hover lift are the whole vocabulary.",
+    "keyCharacteristics": [
+      "Near-black field with a faint violet and pink atmospheric wash.",
+      "Hairline-bordered instrument panels, not floating cards.",
+      "Mono for structure, sans for explanation.",
+      "One glowing terminal as the focal object.",
+      "Spectrum color concentrated in signal and action, never spread as page tint.",
+      "Still page; motion belongs to live data."
+    ],
+    "rules": [
+      {
+        "name": "The One Lamp Rule",
+        "body": "Only the terminal preview gets a deep shadow and a broad violet glow. Every other surface is flat with a hairline border. If a second object glows, the room is no longer dark.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Spectrum Is The Accent Rule",
+        "body": "Ultraviolet, hot pink, and peach belong to signal, action, and the headline accent. They never become a full-page background tint. Keep accent coverage under roughly 10% of any viewport.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Mono sets the interface, headlines, labels, code, and terminal content. Sans sets paragraphs a person reads. Never set a long paragraph in mono; never set a terminal label in sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Display Rule",
+        "body": "Large mono headings close their tracking (-0.03em to -0.045em) and sit near 1.0 line-height. Small mono labels open their tracking (+0.12em to +0.13em) and stay uppercase. The scale contrast is the hierarchy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Structure comes from 1px #23233a borders and spacing, not from shadows or background fills. A panel should still read as a panel in grayscale.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Do keep the page field at Midnight #07070e; use Panel Ink #0d0d18 for contained surfaces.",
+      "Do use 1px Hairline #23233a borders for all structure.",
+      "Do set headlines and interface labels in the mono stack, and long prose in Avenir Next or the system sans fallback.",
+      "Do keep the terminal as the only object with a deep shadow and broad glow.",
+      "Do concentrate ultraviolet, hot pink, and peach in the signal: colored headline, primary action, visualizer, live dots.",
+      "Do use real TUI screenshots and label demo-mode captures.",
+      "Do preserve keyboard access, visible focus, and reduced-motion support."
+    ],
+    "donts": [
+      "Don't use pure black #000 or pure white #fff.",
+      "Don't give cards, panels, or buttons a drop shadow.",
+      "Don't wash whole sections in violet or pink gradients.",
+      "Don't use radii above 12px except the hero status pill.",
+      "Don't add scroll reveals, parallax, or ambient motion. Motion belongs to live data and state changes.",
+      "Don't set body paragraphs in mono or terminal labels in sans.",
+      "Don't invent testimonials, user counts, benchmarks, or product claims."
+    ]
+  }
+}

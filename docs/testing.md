@@ -181,13 +181,20 @@ npm run build
 npm run check
 ```
 
-Then load the built site in a browser at desktop and mobile widths. Verify:
-- no console errors or horizontal overflow;
+Then load the built site in a browser at 1440px, 1920px, 1200px, and
+390px widths. Verify:
+- no console errors or horizontal page overflow;
 - title, description, canonical, OG image, JSON-LD, sitemap, and robots;
+- the full-bleed terminal workspace uses the window width, with no narrow
+  centered column;
+- the session rail is visible above 1200px and the top navigation returns
+  below it;
+- rail and top-nav links track the section in view;
 - all six preview modes switch with `h` / `l`;
 - the shortcut dialog opens with `?`;
+- FAQ rows open and close;
 - copy buttons show feedback;
-- the layout matches the TUI at 390px and 1200px widths.
+- the terminal remains readable and every action stays visible at 390px.
 
 ## Release check
 

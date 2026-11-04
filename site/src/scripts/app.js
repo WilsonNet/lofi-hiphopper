@@ -513,6 +513,46 @@ if (dialog) {
 const year = document.querySelector("#year");
 if (year) year.textContent = String(new Date().getFullYear());
 
+const sectionLinks = [...document.querySelectorAll("[data-section-link]")];
+const sectionTargets = [...document.querySelectorAll("main section[id]")];
+
+if (sectionLinks.length && sectionTargets.length) {
+  let activeId = "";
+  let ticking = false;
+
+  const syncSection = () => {
+    ticking = false;
+    const marker = window.innerHeight * 0.34;
+    let current = sectionTargets[0].id;
+    for (const section of sectionTargets) {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= marker) current = section.id;
+      if (rect.top <= marker && rect.bottom > marker) {
+        current = section.id;
+        break;
+      }
+    }
+    if (current === activeId) return;
+    activeId = current;
+    for (const link of sectionLinks) {
+      const isActive = link.getAttribute("href") === `#${current}`;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    }
+  };
+
+  const requestSync = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(syncSection);
+  };
+
+  window.addEventListener("scroll", requestSync, { passive: true });
+  window.addEventListener("resize", requestSync);
+  syncSection();
+}
+
 if (canvas) {
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);

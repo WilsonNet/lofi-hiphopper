@@ -10,3 +10,8 @@
 site/node_modules/
 site/dist/
 site/.astro/
+
+# Impeccable generated artifacts
+.impeccable/review/
+.impeccable/build/
+.impeccable/mocks/
