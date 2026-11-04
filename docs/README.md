@@ -9,6 +9,7 @@ just want to run it.
 | [Architecture](architecture.md) | Maintainers changing playback, detection, audio, or UI internals |
 | [Testing](testing.md) | Everyone making a change; Herdr feedback loop and integration tests |
 | [Development](development.md) | Local setup, extension points, and troubleshooting |
+| [Releasing](releasing.md) | Maintainers cutting a tag and publishing binaries |
 
 Screenshots live in `docs/images/` and are captured from the real TUI with Charm
 `freeze`.

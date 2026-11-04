@@ -1,0 +1,59 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Check
+        run: |
+          go vet ./...
+          go test ./...
+      - name: Build release archives
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          rm -rf dist package
+          mkdir -p dist
+          for ARCH in arm64 amd64; do
+            rm -rf package
+            mkdir package
+            CGO_ENABLED=1 GOOS=darwin GOARCH="$ARCH" go build -trimpath \
+              -ldflags "-s -w -X main.version=$VERSION" \
+              -o package/lofi-hiphopper .
+            cp README.md install.sh package/
+            (cd package && tar -czf "../dist/lofi-hiphopper_darwin_${ARCH}.tar.gz" lofi-hiphopper README.md install.sh)
+          done
+          cp install.sh dist/install.sh
+          (cd dist && shasum -a 256 lofi-hiphopper_darwin_arm64.tar.gz lofi-hiphopper_darwin_amd64.tar.gz install.sh > checksums.txt)
+          file package/lofi-hiphopper || true
+          cat dist/checksums.txt
+      - name: Verify installer
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="$TAG" BASE_URL="file://$PWD/dist" INSTALL_DIR="$RUNNER_TEMP/lofi-install" ./install.sh
+          "$RUNNER_TEMP/lofi-install/lofi-hiphopper" --version
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          token: ${{ github.token }}

@@ -18,7 +18,7 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/ui"
 )
 
-const version = "0.2.0"
+var version = "0.2.0"
 
 func main() {
 	var (

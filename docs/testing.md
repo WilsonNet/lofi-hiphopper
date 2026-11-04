@@ -150,6 +150,12 @@ Run the docs checker after adding or moving images:
 .agents/skills/documentation/scripts/check-docs
 ```
 
+## Release check
+
+The release workflow runs the installer against the freshly built local release
+before publishing. To reproduce it, see [releasing](releasing.md). A tag is not
+done until the published assets install and `--version` returns the tag version.
+
 ## Cleanup
 
 - Close only Herdr tabs/panes created by the test.

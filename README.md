@@ -27,14 +27,33 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 
 ## Install
 
-Requirements:
+macOS 14.4 or newer for now. Linux support will come later.
 
-- macOS 14.4 or newer
-- Go 1.24+
-- `mpv`, `yt-dlp`, `ffmpeg`
+Install the runtime dependencies:
 
 ```sh
 brew install mpv yt-dlp ffmpeg
+```
+
+Then install the latest release with curl:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+```
+
+The installer puts the binary in `~/.local/bin`. If that directory is not on
+your `PATH`, it prints the line to add. Pin a release or choose a location with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.2.0
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
+```
+
+Prefer building from source? Go 1.24+ is required:
+
+```sh
+git clone https://github.com/WilsonNet/lofi-hiphopper.git
+cd lofi-hiphopper
 go build -o bin/lofi-hiphopper .
 ./bin/lofi-hiphopper
 ```
@@ -51,6 +70,9 @@ filling silence. Use `-demo` to try the UI without any audio:
 ```sh
 go run . -demo
 ```
+
+Releases live at
+[github.com/WilsonNet/lofi-hiphopper/releases](https://github.com/WilsonNet/lofi-hiphopper/releases).
 
 ## Keys
 
