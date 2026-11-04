@@ -12,6 +12,7 @@ type Process struct {
 	PID      int
 	Name     string
 	BundleID string
+	Path     string
 	Input    bool
 	Output   bool
 }
@@ -51,10 +52,24 @@ type Assessment struct {
 
 // Assess classifies a snapshot, ignoring our own player by PID.
 func Assess(processes []Process, ownPIDs ...int) Assessment {
+	return AssessWithBypass(processes, nil, ownPIDs...)
+}
+
+// AssessWithBypass classifies a snapshot while ignoring processes matching the
+// bypass list. Patterns are case-insensitive substrings of process name, bundle
+// ID, or executable path.
+func AssessWithBypass(processes []Process, bypass []string, ownPIDs ...int) Assessment {
 	own := make(map[int]struct{}, len(ownPIDs))
 	for _, pid := range ownPIDs {
 		if pid > 0 {
 			own[pid] = struct{}{}
+		}
+	}
+	patterns := make([]string, 0, len(bypass))
+	for _, pattern := range bypass {
+		pattern = strings.ToLower(strings.TrimSpace(pattern))
+		if pattern != "" {
+			patterns = append(patterns, pattern)
 		}
 	}
 
@@ -63,6 +78,9 @@ func Assess(processes []Process, ownPIDs ...int) Assessment {
 	audio := map[string]struct{}{}
 	for _, process := range processes {
 		if _, isOurs := own[process.PID]; isOurs {
+			continue
+		}
+		if matchesBypass(process, patterns) {
 			continue
 		}
 		label := processLabel(process)
@@ -111,4 +129,23 @@ func sortedKeys(set map[string]struct{}) []string {
 		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
 	})
 	return keys
+}
+
+func matchesBypass(process Process, patterns []string) bool {
+	if len(patterns) == 0 {
+		return false
+	}
+	values := []string{
+		strings.ToLower(process.Name),
+		strings.ToLower(process.BundleID),
+		strings.ToLower(process.Path),
+	}
+	for _, pattern := range patterns {
+		for _, value := range values {
+			if value != "" && strings.Contains(value, pattern) {
+				return true
+			}
+		}
+	}
+	return false
 }

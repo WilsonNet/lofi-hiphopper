@@ -121,6 +121,13 @@ radios:
 4. Unit tests in `internal/update` cover semver comparison, API parsing,
    checksum verification, extraction, and replacement.
 
+**Bypass list**
+
+1. Add `bypass_apps: ["CoreSimulator"]` to a temp config.
+2. Start the app while a simulator process is producing output.
+3. Confirm detection ignores it and playback starts.
+4. Confirm a non-bypassed app still causes a hold.
+
 **Configuration**
 
 1. Start with no config in a temporary HOME; confirm defaults are used and no

@@ -76,6 +76,8 @@ output; a screenshot alone is not evidence of state.
 - A user-created config only overrides the parts it specifies.
 - Scalars such as `volume`, `volume_step`, `poll_interval`, `autofill`, and
   `hold_mode` override their default when present.
+- `bypass_apps` is an optional list of process name, bundle ID, or executable
+  path substrings that must never interrupt lofi.
 - `radios` replaces the default radio list when present.
 - `shortcuts` merges by action: listed actions replace their keys; unlisted
   actions keep their built-in keys.
@@ -93,6 +95,7 @@ output; a screenshot alone is not evidence of state.
 - Default hold mode is mute: keep the stream and analyser alive, mute mpv, then
   unmute on silence. `hold_mode: pause` is the opt-in pause mode.
 - Preserve the user's mute intent across a mute hold.
+- Bypassed apps are excluded from both output and microphone classification.
 - The analyzer is a separate silent ffmpeg decode. Playback must continue if the
   analyzer or visualizer fails.
 - UI drawing must stay within the canvas; all six visualizers must render at

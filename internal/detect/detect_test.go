@@ -130,3 +130,34 @@ func TestTrackerCallInterruptsAnyState(t *testing.T) {
 		t.Fatalf("post-call sustained audio = %v", got)
 	}
 }
+
+func TestAssessWithBypassIgnoresMatchingAudio(t *testing.T) {
+	processes := []Process{
+		{PID: 12536, Name: "ExampleApp", BundleID: "com.example.MyApp", Path: "/Users/me/Library/Developer/CoreSimulator/Devices/X/ExampleApp.app/ExampleApp", Output: true},
+		{PID: 5000, Name: "Spotify", BundleID: "com.spotify.client", Output: true},
+	}
+	got := AssessWithBypass(processes, []string{"coresimulator"})
+	if got.Activity != OtherAudio {
+		t.Fatalf("activity = %v, want other audio from Spotify", got.Activity)
+	}
+	if !reflect.DeepEqual(got.AudioApps, []string{"Spotify"}) {
+		t.Fatalf("audio apps = %v", got.AudioApps)
+	}
+	got = AssessWithBypass(processes[:1], []string{"com.example.MyApp"})
+	if got.Activity != Silence {
+		t.Fatalf("bundle bypass failed: %v", got.Activity)
+	}
+	got = AssessWithBypass(processes[:1], []string{"EXAMPLEAPP"})
+	if got.Activity != Silence {
+		t.Fatalf("name bypass is not case-insensitive: %v", got.Activity)
+	}
+}
+
+func TestBypassAlsoSilencesInput(t *testing.T) {
+	got := AssessWithBypass([]Process{
+		{PID: 1, Name: "ExampleApp", BundleID: "com.example.MyApp", Path: "/CoreSimulator/ExampleApp.app/ExampleApp", Input: true, Output: true},
+	}, []string{"CoreSimulator"})
+	if got.Activity != Silence {
+		t.Fatalf("bypassed input activity = %v", got.Activity)
+	}
+}

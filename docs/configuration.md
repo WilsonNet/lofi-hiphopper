@@ -42,6 +42,7 @@ lofi-hiphopper -config ./radio.yaml
 | `poll_interval` | `1s` | Use the value |
 | `autofill` | `true` | Use the value, including `false` |
 | `hold_mode` | `mute` | `mute` or `pause` |
+| `bypass_apps` | `[]` | Replace the list of ignored apps |
 | `radios` | Built-in Lofi Girl list | Replace the radio list |
 | `shortcuts` | Built-in shortcut table | Merge by action; listed actions replace their keys, unlisted actions keep defaults |
 
@@ -88,6 +89,22 @@ a call or other audio.
 ```yaml
 hold_mode: mute
 ```
+
+### `bypass_apps`
+
+Apps that must never interrupt lofi. Matching is case-insensitive and checks the
+process name, bundle ID, and executable path. A substring is enough.
+
+```yaml
+bypass_apps:
+  - "CoreSimulator"
+  - "com.example.MyApp"
+  - "com.apple.Music"
+```
+
+This is useful for the iOS Simulator or helper apps that keep an output stream
+open even when you cannot hear them. A bypassed app is ignored for both output
+and microphone activity. Leave it as `[]` to disable.
 
 ### `radios`
 
@@ -178,6 +195,7 @@ volume_step: 5
 poll_interval: 1s
 autofill: true
 hold_mode: mute
+bypass_apps: []
 
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -228,6 +246,7 @@ Invalid values fail at startup with a clear message. The app rejects:
 - volume step outside `1`-`25`;
 - poll interval outside `250ms`-`30s`;
 - hold mode other than `mute` or `pause`;
+- an empty `bypass_apps` entry;
 - an empty radio list or duplicate URLs;
 - unknown shortcut actions;
 - empty keys or duplicate action entries;

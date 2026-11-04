@@ -656,7 +656,7 @@ func (m *Model) handleDetection(message detectionMsg) tea.Cmd {
 	if m.deps.Player != nil {
 		ownPID = m.deps.Player.PID()
 	}
-	assessment := detect.Assess(message.processes, ownPID)
+	assessment := detect.AssessWithBypass(message.processes, m.cfg.BypassApps, ownPID)
 	m.assessment = assessment
 	m.activity = m.tracker.Observe(assessment.Activity)
 	m.ready = true

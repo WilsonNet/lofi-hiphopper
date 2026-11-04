@@ -945,3 +945,29 @@ func TestUpdateDialogViewSizes(t *testing.T) {
 		assertFrameSize(t, model.View(), size[0], size[1])
 	}
 }
+
+func TestBypassAppsAllowAutoplay(t *testing.T) {
+	cfg := config.Default()
+	cfg.BypassApps = []string{"CoreSimulator"}
+	rig := newRigWithConfig(t, cfg)
+	cmd := rig.detect(detect.Process{
+		PID:      12536,
+		Name:     "ExampleApp",
+		BundleID: "com.example.MyApp",
+		Path:     "/Users/me/Library/Developer/CoreSimulator/Devices/X/ExampleApp.app/ExampleApp",
+		Output:   true,
+	})
+	if cmd == nil {
+		t.Fatal("bypassed simulator audio still blocked auto-fill")
+	}
+	_, next := rig.model.Update(cmd())
+	if next != nil {
+		_ = runCommand(next)
+	}
+	if rig.model.state != statePlaying {
+		t.Fatalf("state = %v", rig.model.state)
+	}
+	if rig.model.activity != detect.Silence {
+		t.Fatalf("activity = %v", rig.model.activity)
+	}
+}

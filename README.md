@@ -25,6 +25,8 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 - Checks GitHub releases on launch. When a newer release exists, `u` appears
   in the footer; `u` opens an update dialog and can install and restart.
 - Ignores its own player, so it never pauses itself.
+- Lets you bypass apps that should never interrupt lofi, such as simulators or
+  background tools.
 - Keeps filling silence for as long as the TUI is open.
 - Lets you mute, change volume, pick a radio, or change visualizers from the
   keyboard or mouse.
@@ -49,7 +51,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.0
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.1
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -151,6 +153,14 @@ The default yield behavior is:
 
 ```yaml
 hold_mode: mute
+```
+
+To ignore an app completely, list a process name, bundle ID, or path substring:
+
+```yaml
+bypass_apps:
+  - "CoreSimulator"
+  - "com.example.MyApp"
 ```
 
 A radio and shortcut example:

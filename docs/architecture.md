@@ -70,11 +70,16 @@ through cgo. For each process it reads:
 - `kAudioProcessPropertyIsRunningInput`;
 - `kAudioProcessPropertyIsRunningOutput`.
 
-`Assess` filters out the player's own mpv PID, then classifies:
+`AssessWithBypass` filters out the player's own mpv PID and any process matching
+`bypass_apps` (case-insensitive substring of name, bundle ID, or executable
+path), then classifies:
 
 - any input process -> `Call`;
 - otherwise any output process -> `OtherAudio`;
 - otherwise `Silence`.
+
+The bypass list is for simulator/helper audio that should never interrupt lofi.
+It applies to both output and input, so list only apps you trust to ignore.
 
 `Tracker` debounces output/silence transitions for two samples. A call is
 immediate. This is what prevents notification pings from pausing the music.

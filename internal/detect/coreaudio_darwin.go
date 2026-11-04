@@ -17,6 +17,7 @@ typedef struct {
 	uint32_t output;
 	char name[128];
 	char bundle[256];
+	char path[1024];
 } lofi_process;
 
 // lofi_process_list returns the number of process objects, or -1 with status
@@ -91,6 +92,7 @@ static int lofi_process_list(lofi_process **out, OSStatus *status) {
 		AudioObjectGetPropertyData(object, &prop, 0, NULL, &dataSize, &process.output);
 
 		proc_name(pid, process.name, sizeof(process.name));
+		proc_pidpath(pid, process.path, sizeof(process.path));
 
 		CFStringRef bundle = NULL;
 		prop.mSelector = kAudioProcessPropertyBundleID;
@@ -142,10 +144,12 @@ func (c *CoreAudio) Processes() ([]Process, error) {
 	for _, item := range unsafe.Slice(raw, int(count)) {
 		name := C.GoString((*C.char)(unsafe.Pointer(&item.name[0])))
 		bundle := C.GoString((*C.char)(unsafe.Pointer(&item.bundle[0])))
+		path := C.GoString((*C.char)(unsafe.Pointer(&item.path[0])))
 		processes = append(processes, Process{
 			PID:      int(item.pid),
 			Name:     name,
 			BundleID: bundle,
+			Path:     path,
 			Input:    item.input != 0,
 			Output:   item.output != 0,
 		})

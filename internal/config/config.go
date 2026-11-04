@@ -73,6 +73,7 @@ type Config struct {
 	PollInterval Duration   `yaml:"poll_interval"`
 	Autofill     bool       `yaml:"autofill"`
 	HoldMode     string     `yaml:"hold_mode"`
+	BypassApps   []string   `yaml:"bypass_apps"`
 	Radios       []Radio    `yaml:"radios"`
 	Shortcuts    []Shortcut `yaml:"shortcuts"`
 }
@@ -178,6 +179,7 @@ func Default() Config {
 		PollInterval: Duration(DefaultPollInterval),
 		Autofill:     true,
 		HoldMode:     DefaultHoldMode,
+		BypassApps:   []string{},
 		Radios:       DefaultRadios(),
 		Shortcuts:    DefaultShortcuts(),
 	}
@@ -197,6 +199,11 @@ autofill: true
 #   mute  = keep streaming, mute, then unmute seamlessly (default)
 #   pause = pause the stream (live streams may resume behind the live edge)
 hold_mode: mute
+
+# Apps that should never interrupt lofi. Entries match process name,
+# bundle ID, or executable path, case-insensitively.
+# Example: ["CoreSimulator", "com.apple.Music"]
+bypass_apps: []
 
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -330,6 +337,22 @@ func (c *Config) Validate() error {
 	}
 
 	seen := make(map[string]int, len(c.Radios))
+	seenBypass := make(map[string]struct{}, len(c.BypassApps))
+	bypass := make([]string, 0, len(c.BypassApps))
+	for index, entry := range c.BypassApps {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			return fmt.Errorf("bypass_apps[%d] is empty", index)
+		}
+		key := strings.ToLower(entry)
+		if _, exists := seenBypass[key]; exists {
+			continue
+		}
+		seenBypass[key] = struct{}{}
+		bypass = append(bypass, entry)
+	}
+	c.BypassApps = bypass
+
 	shortcuts, err := normalizeShortcuts(c.Shortcuts)
 	if err != nil {
 		return err

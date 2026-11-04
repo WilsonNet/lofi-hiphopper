@@ -346,3 +346,31 @@ func TestHoldModeValidation(t *testing.T) {
 		t.Fatalf("Validate() = %v", err)
 	}
 }
+
+func TestBypassAppsParsing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `bypass_apps:
+  - " CoreSimulator "
+  - "com.example.MyApp"
+  - "coresimulator"
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"CoreSimulator", "com.example.MyApp"}
+	if !reflect.DeepEqual(cfg.BypassApps, want) {
+		t.Fatalf("bypass apps = %#v, want %#v", cfg.BypassApps, want)
+	}
+}
+
+func TestBypassAppsRejectsEmptyEntry(t *testing.T) {
+	cfg := Default()
+	cfg.BypassApps = []string{" "}
+	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "bypass_apps") {
+		t.Fatalf("Validate() = %v", err)
+	}
+}
