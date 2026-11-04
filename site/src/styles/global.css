@@ -29,6 +29,7 @@
 }
 
 html {
+  font-size: clamp(18px, 0.5vw + 12px, 20px);
   scroll-behavior: smooth;
   scroll-padding-top: 90px;
 }
@@ -42,7 +43,7 @@ body {
     var(--bg);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -169,13 +170,13 @@ button {
   padding-left: 20px;
   border-left: 1px solid var(--border);
   color: var(--dim);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   white-space: nowrap;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
   align-items: center;
   gap: clamp(36px, 5vw, 76px);
   max-width: 1240px;
@@ -233,7 +234,7 @@ button {
   margin: 28px 0 0;
   color: var(--muted);
   font-family: var(--sans);
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  font-size: clamp(1.05rem, 1.35vw, 1.25rem);
   line-height: 1.7;
 }
 
@@ -255,7 +256,7 @@ button {
   border-radius: 8px;
   background: var(--panel);
   color: var(--ink);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   text-decoration: none;
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
@@ -281,7 +282,7 @@ button {
 .hero-note {
   margin: 18px 0 0;
   color: var(--dim);
-  font-size: 0.74rem;
+  font-size: 0.8rem;
 }
 
 .install-mini {
@@ -299,7 +300,7 @@ button {
 .install-mini code {
   min-width: 0;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
@@ -335,7 +336,7 @@ button {
     0 0 0 1px rgba(201, 167, 255, 0.04),
     0 28px 90px rgba(0, 0, 0, 0.55),
     0 0 80px rgba(123, 92, 255, 0.12);
-  font-size: 0.76rem;
+  font-size: 0.88rem;
 }
 
 .terminal::after {
@@ -355,7 +356,7 @@ button {
   border-bottom: 1px solid var(--border);
   background: #0a0a12;
   color: var(--dim);
-  font-size: 0.66rem;
+  font-size: 0.72rem;
 }
 
 .traffic {
@@ -401,7 +402,7 @@ button {
   align-items: center;
   gap: 16px;
   min-width: 0;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
 }
 
 .term-logo {
@@ -426,7 +427,7 @@ button {
   margin-left: auto;
   color: var(--muted);
   white-space: nowrap;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
 }
 
 .pulse-dot {
@@ -442,7 +443,7 @@ button {
 
 .term-grid {
   display: grid;
-  grid-template-columns: minmax(196px, 0.8fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(220px, 0.82fr) minmax(0, 1.52fr);
   gap: 12px;
 }
 
@@ -469,7 +470,7 @@ button {
   padding: 0 6px;
   background: #0d0d18;
   color: var(--accent);
-  font-size: 0.63rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.13em;
   line-height: 1.4;
@@ -482,7 +483,7 @@ button {
   padding: 0 6px;
   background: #0d0d18;
   color: var(--dim);
-  font-size: 0.56rem;
+  font-size: 0.62rem;
 }
 
 .radio-list {
@@ -492,7 +493,7 @@ button {
   padding: 0;
   list-style: none;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   line-height: 1.5;
 }
 
@@ -531,7 +532,7 @@ button {
   gap: 1px 10px;
   margin: 0;
   color: var(--dim);
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   line-height: 1.55;
 }
 
@@ -560,7 +561,7 @@ button {
   padding: 0 6px;
   background: #0d0d18;
   color: var(--dim);
-  font-size: 0.56rem;
+  font-size: 0.64rem;
 }
 
 .viz-meta #mode-label {
@@ -596,7 +597,7 @@ button {
   justify-content: space-between;
   padding: 4px 3px 0;
   color: var(--dim);
-  font-size: 0.54rem;
+  font-size: 0.6rem;
 }
 
 .term-now {
@@ -607,12 +608,12 @@ button {
   margin-top: 12px;
   padding-top: 11px;
   border-top: 1px solid var(--border);
-  font-size: 0.66rem;
+  font-size: 0.74rem;
 }
 
 .now-label {
   color: var(--pink);
-  font-size: 0.56rem;
+  font-size: 0.64rem;
   letter-spacing: 0.12em;
 }
 
@@ -628,7 +629,7 @@ button {
   grid-column: 2;
   overflow: hidden;
   color: var(--dim);
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -637,7 +638,7 @@ button {
   grid-row: 1 / span 2;
   grid-column: 3;
   color: var(--muted);
-  font-size: 0.56rem;
+  font-size: 0.64rem;
   white-space: nowrap;
 }
 
@@ -663,7 +664,7 @@ button {
   gap: 4px 20px;
   margin-top: 9px;
   color: var(--muted);
-  font-size: 0.58rem;
+  font-size: 0.66rem;
 }
 
 .term-status {
@@ -699,7 +700,7 @@ kbd {
 .demo-caption {
   margin: 12px 0 0;
   color: var(--dim);
-  font-size: 0.68rem;
+  font-size: 0.76rem;
   text-align: right;
 }
 
@@ -781,7 +782,7 @@ kbd {
 
 .feature-card h3 {
   margin: 0 0 9px;
-  font-size: 0.98rem;
+  font-size: 1.06rem;
   letter-spacing: -0.02em;
 }
 
@@ -789,7 +790,7 @@ kbd {
   margin: 0;
   color: var(--muted);
   font-family: var(--sans);
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.65;
 }
 
@@ -833,7 +834,7 @@ kbd {
 .screen-card figcaption {
   padding: 13px 15px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .install-section {
@@ -873,7 +874,7 @@ kbd {
   border-radius: 9px;
   background: #090911;
   color: var(--ink);
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   line-height: 1.75;
   tab-size: 2;
 }
@@ -897,7 +898,7 @@ kbd {
 .small-note {
   margin: 18px 0 0;
   color: var(--dim);
-  font-size: 0.73rem;
+  font-size: 0.8rem;
   line-height: 1.7;
 }
 
@@ -912,7 +913,7 @@ kbd {
 .config-panel pre {
   margin: 7px 0 0;
   padding: 13px 14px;
-  font-size: 0.69rem;
+  font-size: 0.77rem;
   line-height: 1.7;
 }
 
@@ -940,7 +941,7 @@ details[open] {
 summary {
   cursor: pointer;
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: 0.95rem;
   list-style: none;
 }
 
@@ -964,7 +965,7 @@ details p {
   margin: 11px 0 0 1.2em;
   color: var(--muted);
   font-family: var(--sans);
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.65;
 }
 
@@ -1006,7 +1007,7 @@ details p {
   padding: 25px 28px 34px;
   border-top: 1px solid var(--border);
   color: var(--dim);
-  font-size: 0.7rem;
+  font-size: 0.78rem;
 }
 
 .site-footer a {
@@ -1034,7 +1035,7 @@ details p {
   border-radius: 7px;
   background: var(--panel-raised);
   color: var(--success);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -1088,7 +1089,7 @@ details p {
   gap: 5px 12px;
   margin: 20px 0;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
 }
 
 .shortcut-dialog dt {
@@ -1102,7 +1103,7 @@ details p {
 .dialog-note {
   margin: 0;
   color: var(--dim);
-  font-size: 0.68rem;
+  font-size: 0.76rem;
 }
 
 @keyframes pulse {
@@ -1173,7 +1174,7 @@ details p {
 
 @media (max-width: 640px) {
   body {
-    font-size: 15px;
+    font-size: 1rem;
   }
 
   .site-header,
