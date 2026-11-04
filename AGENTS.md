@@ -92,8 +92,8 @@ output; a screenshot alone is not evidence of state.
   own output never counts as "other audio".
 - Calls win: any non-own input stream is a call and holds playback immediately.
 - Other output yields after debounce; notification pings must not pause music.
-- Default hold mode is mute: keep the stream and analyser alive, mute mpv, then
-  unmute on silence. `hold_mode: pause` is the opt-in pause mode.
+- Default hold mode is stop: stop mpv and the analyser, then re-resolve on
+  silence. `hold_mode: pause` and `hold_mode: mute` are opt-in alternatives.
 - Preserve the user's mute intent across a mute hold.
 - Bypassed apps are excluded from both output and microphone classification.
 - The analyzer is a separate silent ffmpeg decode. Playback must continue if the

@@ -731,7 +731,16 @@ func (m *Model) suspend(reason string) tea.Cmd {
 	m.state = stateSuspended
 	playerService := m.deps.Player
 
-	if m.cfg.HoldMode == "pause" {
+	switch m.cfg.HoldMode {
+	case "mute":
+		// Keep the stream and visualizer alive. The user's mute intent is
+		// stored in m.muted; this hold is temporary.
+		m.muteHold = true
+		m.suspendedStop = false
+		return m.playerAction("mute hold", func(ctx context.Context) error {
+			return playerService.SetMute(ctx, true)
+		})
+	case "pause":
 		m.muteHold = false
 		m.suspendedStop = false
 		if m.deps.Analyzer != nil {
@@ -740,15 +749,17 @@ func (m *Model) suspend(reason string) tea.Cmd {
 		return m.playerAction("pause", func(ctx context.Context) error {
 			return playerService.Pause(ctx, true)
 		})
+	default:
+		m.muteHold = false
+		m.suspendedStop = true
+		m.loaded = -1
+		if m.deps.Analyzer != nil {
+			m.deps.Analyzer.Stop()
+		}
+		return m.playerAction("stop", func(ctx context.Context) error {
+			return playerService.Stop(ctx)
+		})
 	}
-
-	// Mute hold keeps the stream and the visualizer alive. The user's mute
-	// intent is stored in m.muted; this hold is temporary.
-	m.muteHold = true
-	m.suspendedStop = false
-	return m.playerAction("mute hold", func(ctx context.Context) error {
-		return playerService.SetMute(ctx, true)
-	})
 }
 
 func (m *Model) resume() tea.Cmd {

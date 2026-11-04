@@ -96,11 +96,12 @@ Player states are `idle`, `tuning`, `playing`, `suspended`, and `retrying`.
 - `OtherAudio` with auto-fill on suspends playback; with auto-fill off it keeps
   playing unless a call is active.
 - `Call` always suspends.
-- The default `hold_mode: mute` keeps mpv and the analyser running, mutes the
-  output, and unmutes on resume. This returns to the live edge seamlessly.
+- The default `hold_mode: stop` stops mpv and the analyser, then resolves and
+  plays again on silence.
 - `hold_mode: pause` pauses mpv and stops the analyser; resume restarts the
   analyser and unpauses. A paused livestream may be behind the live edge.
-- The user's manual mute intent is preserved across a mute hold.
+- `hold_mode: mute` keeps mpv and the analyser running, mutes the output, and
+  unmutes on resume. The user's manual mute intent is preserved.
 - Stream loss schedules exponential retries (3s → 30s). A successful resolve
   resets the backoff.
 - Tuning is cancellable. An epoch and mutex prevent a slow resolve from

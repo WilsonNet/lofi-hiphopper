@@ -19,8 +19,8 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 - Yields to Spotify, YouTube, a call, or any other app using audio.
 - Holds immediately when Zoom, Meet, FaceTime, Teams, or another app opens the
   microphone.
-- Mutes and keeps the stream running while holding, so return is seamless.
-  Pause mode is available in the config for people who prefer it.
+- Stops the stream while holding and resolves it again on return (default).
+  Mute mode is opt-in for a seamless silent hold.
 - Comes back after the call or other audio ends.
 - Checks GitHub releases on launch. When a newer release exists, `u` appears
   in the footer; `u` opens an update dialog and can install and restart.
@@ -51,7 +51,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.1
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.2
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -152,7 +152,7 @@ volume: 25
 The default yield behavior is:
 
 ```yaml
-hold_mode: mute
+hold_mode: stop
 ```
 
 To ignore an app completely, list a process name, bundle ID, or path substring:
@@ -190,9 +190,9 @@ When the window is narrow, the UI still works:
 
 It uses macOS CoreAudio process flags to see which apps are producing output or
 using a microphone. A separate silent ffmpeg decode feeds the visualizers, while
-mpv handles playback. While yielding it mutes mpv by default and unmutes when
-silence returns; set `hold_mode: pause` to pause the stream instead. It never
-records your microphone.
+mpv handles playback. While yielding it stops the stream by default and resolves
+it again when silence returns. Set `hold_mode: mute` to keep streaming silently,
+or `hold_mode: pause` to pause. It never records your microphone.
 
 For the deep version, read:
 

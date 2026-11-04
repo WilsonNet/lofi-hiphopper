@@ -261,59 +261,120 @@ func TestInitialSilenceStartsDefaultRadio(t *testing.T) {
 	}
 }
 
-func TestCallMutesAndResumesWithoutReloading(t *testing.T) {
+func TestDefaultStopHoldStopsAndResolvesAgain(t *testing.T) {
 	rig := newRig(t)
 	rig.startPlayback(t)
 	rig.player.resetCalls()
+	rig.analyzer.mu.Lock()
 	rig.analyzer.stops = 0
+	rig.analyzer.mu.Unlock()
 
 	cmd := rig.detect(detect.Process{PID: 7, Name: "zoom.us", Input: true, Output: true})
-	if cmd != nil {
-		if msg := cmd(); msg != nil {
-			if _, ok := msg.(playerActionMsg); !ok {
-				t.Fatalf("hold command returned %T", msg)
-			}
-		}
+	if cmd == nil {
+		t.Fatal("stop hold produced no command")
 	}
+	_ = runCommand(cmd)
 	if rig.model.state != stateSuspended {
 		t.Fatalf("state = %v, want suspended", rig.model.state)
 	}
 	if rig.model.pauseReason != "call" {
 		t.Fatalf("reason = %q", rig.model.pauseReason)
 	}
-	if !rig.model.muteHold {
-		t.Fatal("default hold mode should mute, not pause")
+	if !rig.model.suspendedStop || rig.model.muteHold {
+		t.Fatalf("suspendedStop/muteHold = %v/%v", rig.model.suspendedStop, rig.model.muteHold)
 	}
-	if !rig.player.Snapshot().Muted {
-		t.Fatal("mpv was not muted by the hold")
+	if !rig.player.hasCall("stop") {
+		t.Fatalf("default stop mode did not stop mpv: %v", rig.player.calls)
 	}
-	if rig.player.hasCall("stop") || rig.player.hasCall("pause") {
-		t.Fatalf("mute hold should not stop or pause mpv: %v", rig.player.calls)
+	if rig.player.hasCall("pause") || rig.player.hasCall("mute") {
+		t.Fatalf("stop mode used pause/mute: %v", rig.player.calls)
 	}
-	if rig.analyzer.stops != 0 {
-		t.Fatalf("mute hold should leave the analyzer running: stops=%d", rig.analyzer.stops)
+	rig.analyzer.mu.Lock()
+	stops := rig.analyzer.stops
+	rig.analyzer.mu.Unlock()
+	if stops != 1 {
+		t.Fatalf("analyzer stops = %d, want 1", stops)
 	}
 
-	if cmd := rig.detect(); cmd != nil {
-		t.Fatalf("one silent sample resumed too early")
-	}
+	_ = rig.detect()
 	cmd = rig.detect()
 	if cmd == nil {
-		t.Fatal("two silent samples did not resume")
+		t.Fatal("stop hold did not resume")
 	}
-	msg := cmd()
-	if _, ok := msg.(playerActionMsg); !ok {
-		t.Fatalf("resume returned %T, want mute change", msg)
+	message := cmd()
+	if _, ok := message.(tuneMsg); !ok {
+		t.Fatalf("resume returned %T, want tuneMsg", message)
 	}
-	_ = msg
+	_, next := rig.model.Update(message)
+	if next != nil {
+		_ = runCommand(next)
+	}
+	if rig.model.state != statePlaying {
+		t.Fatalf("state = %v", rig.model.state)
+	}
+	if rig.resolver.calls != 2 {
+		t.Fatalf("resolver calls = %d, want re-resolve", rig.resolver.calls)
+	}
+}
+
+func TestMuteHoldModeKeepsStreamAndRestoresUserMute(t *testing.T) {
+	cfg := config.Default()
+	cfg.HoldMode = "mute"
+	rig := newRigWithConfig(t, cfg)
+	rig.startPlayback(t)
+	rig.player.resetCalls()
+	rig.analyzer.mu.Lock()
+	rig.analyzer.stops = 0
+	rig.analyzer.mu.Unlock()
+
+	cmd := rig.detect(detect.Process{PID: 7, Name: "zoom.us", Input: true, Output: true})
+	if cmd == nil {
+		t.Fatal("mute hold produced no command")
+	}
+	_ = runCommand(cmd)
+	if !rig.model.muteHold {
+		t.Fatal("mute mode did not engage mute hold")
+	}
+	if !rig.player.Snapshot().Muted {
+		t.Fatal("mpv was not muted")
+	}
+	if rig.player.hasCall("stop") || rig.player.hasCall("pause") {
+		t.Fatalf("mute hold stopped/paused mpv: %v", rig.player.calls)
+	}
+	rig.analyzer.mu.Lock()
+	stops := rig.analyzer.stops
+	rig.analyzer.mu.Unlock()
+	if stops != 0 {
+		t.Fatalf("mute hold stopped analyzer: %d", stops)
+	}
+
+	_ = rig.detect()
+	cmd = rig.detect()
+	if cmd == nil {
+		t.Fatal("mute hold did not resume")
+	}
+	_ = runCommand(cmd)
 	if rig.model.state != statePlaying || rig.model.muteHold {
 		t.Fatalf("state/muteHold = %v/%v", rig.model.state, rig.model.muteHold)
 	}
 	if rig.player.Snapshot().Muted {
-		t.Fatal("resume did not unmute mpv")
+		t.Fatal("resume did not unmute")
 	}
 	if rig.resolver.calls != 1 {
-		t.Fatalf("mute hold should not re-resolve; resolver calls = %d", rig.resolver.calls)
+		t.Fatalf("mute hold re-resolved: %d", rig.resolver.calls)
+	}
+
+	// Manual mute intent must survive a mute hold.
+	_ = runCommand(rig.model.handleKey("m"))
+	if !rig.model.muted {
+		t.Fatal("manual mute failed")
+	}
+	rig.player.resetCalls()
+	_ = runCommand(rig.detect(detect.Process{PID: 8, Name: "FaceTime", Input: true}))
+	_ = rig.detect()
+	_ = runCommand(rig.detect())
+	if !rig.model.muted || !rig.player.Snapshot().Muted {
+		t.Fatal("mute hold did not preserve manual mute")
 	}
 }
 
@@ -362,28 +423,6 @@ func TestPauseHoldModePausesAndRestartsAnalyzer(t *testing.T) {
 	rig.analyzer.mu.Unlock()
 	if starts < 2 {
 		t.Fatalf("analyzer was not restarted after pause hold: %d starts", starts)
-	}
-}
-
-func TestMuteHoldPreservesUserMute(t *testing.T) {
-	rig := newRig(t)
-	rig.startPlayback(t)
-	_ = runCommand(rig.model.handleKey("m"))
-	if !rig.model.muted {
-		t.Fatal("manual mute failed")
-	}
-	rig.player.resetCalls()
-	_ = runCommand(rig.detect(detect.Process{PID: 8, Name: "FaceTime", Input: true}))
-	_ = rig.detect()
-	_ = runCommand(rig.detect())
-	if !rig.model.muted {
-		t.Fatal("hold changed the user's mute intent")
-	}
-	if !rig.player.Snapshot().Muted {
-		t.Fatal("resume should leave a manually muted stream muted")
-	}
-	if rig.model.state != statePlaying {
-		t.Fatalf("state = %v", rig.model.state)
 	}
 }
 

@@ -380,9 +380,11 @@ func (m *Model) drawNowCard(canvas *Canvas, x, y, width, height int) {
 			hint = "retrying in " + shortDuration(time.Until(m.retryAt)) + " · press r"
 			hintColor = Peach
 		case m.state == stateSuspended:
-			action := "held"
+			action := "paused"
 			if m.muteHold {
 				action = "muted"
+			} else if m.suspendedStop {
+				action = "stopped"
 			}
 			hint = action + " for " + m.pauseReason + " · auto-resumes"
 			hintColor = Peach
@@ -473,9 +475,12 @@ func (m *Model) drawVisualizerOverlay(canvas *Canvas, x, y, width, height int) {
 	case m.state == stateTuning:
 		label = "TUNING STREAM"
 	case m.state == stateSuspended:
-		if m.muteHold {
+		switch {
+		case m.muteHold:
 			label = "MUTED · " + strings.ToUpper(m.pauseReason)
-		} else {
+		case m.suspendedStop:
+			label = "STOPPED · " + strings.ToUpper(m.pauseReason)
+		default:
 			label = "PAUSED · " + strings.ToUpper(m.pauseReason)
 		}
 	case m.state == stateRetrying:
@@ -764,6 +769,9 @@ func (m *Model) playbackLabel() string {
 		if m.muteHold {
 			return "♪ MUTED"
 		}
+		if m.suspendedStop {
+			return "■ STOPPED"
+		}
 		return "❚❚ PAUSED"
 	case stateRetrying:
 		return "↻ RETRYING"
@@ -789,6 +797,9 @@ func (m *Model) stateBadge() string {
 	case stateSuspended:
 		if m.muteHold {
 			return "MUTED"
+		}
+		if m.suspendedStop {
+			return "STOPPED"
 		}
 		return "PAUSED"
 	case stateRetrying:

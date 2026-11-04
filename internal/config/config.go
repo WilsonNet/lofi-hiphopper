@@ -19,9 +19,9 @@ const (
 	// DefaultVolumeStep is one wheel notch or volume key press.
 	DefaultVolumeStep = 5
 	// DefaultPollInterval is how often the audio activity probe runs.
-	DefaultPollInterval = time.Second
+	DefaultPollInterval = 500 * time.Millisecond
 	// DefaultHoldMode keeps the stream alive but muted while yielding.
-	DefaultHoldMode = "mute"
+	DefaultHoldMode = "stop"
 	appDir          = "lofi-hiphopper"
 )
 
@@ -192,13 +192,14 @@ const defaultYAML = `# lofi-hiphopper · fills Mac silence with lofi.
 # values override only that part. The first radio fills silence.
 volume: 55
 volume_step: 5
-poll_interval: 1s
+poll_interval: 500ms
 autofill: true
 
 # While yielding to a call or other audio:
-#   mute  = keep streaming, mute, then unmute seamlessly (default)
+#   stop  = stop the stream and resolve it again on return (default)
 #   pause = pause the stream (live streams may resume behind the live edge)
-hold_mode: mute
+#   mute  = keep streaming and muted, then unmute seamlessly (opt-in)
+hold_mode: stop
 
 # Apps that should never interrupt lofi. Entries match process name,
 # bundle ID, or executable path, case-insensitively.
@@ -325,8 +326,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("volume_step must be between 1 and 25 (got %d)", c.VolumeStep)
 	}
 	c.HoldMode = strings.ToLower(strings.TrimSpace(c.HoldMode))
-	if c.HoldMode != "mute" && c.HoldMode != "pause" {
-		return fmt.Errorf("hold_mode must be \"mute\" or \"pause\" (got %q)", c.HoldMode)
+	if c.HoldMode != "stop" && c.HoldMode != "pause" && c.HoldMode != "mute" {
+		return fmt.Errorf("hold_mode must be \"stop\", \"pause\", or \"mute\" (got %q)", c.HoldMode)
 	}
 	interval := time.Duration(c.PollInterval)
 	if interval < 250*time.Millisecond || interval > 30*time.Second {

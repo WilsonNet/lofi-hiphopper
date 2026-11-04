@@ -78,9 +78,9 @@ Read `docs/architecture.md` first. Preserve these invariants:
 - the player's own PID is excluded;
 - calls suspend immediately;
 - output yields only after debounce;
-- the default mute hold keeps the stream and analyser alive and restores the
-  user's mute intent;
+- the default stop hold stops mpv and the analyser and re-resolves on resume;
 - pause mode stops the analyser and unpauses on resume;
+- mute mode keeps the stream alive and restores the user's mute intent;
 - analyzer failure does not stop playback;
 - retries use backoff and reset on success.
 

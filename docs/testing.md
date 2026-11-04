@@ -70,7 +70,7 @@ Use a temporary config with a low volume:
 
 ```yaml
 volume: 10
-poll_interval: 1s
+poll_interval: 500ms
 autofill: true
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -90,13 +90,13 @@ radios:
 
 1. Open a YouTube video with real/headded audio (or the Playwright browser if
    it produces a real CoreAudio stream).
-2. Within a few seconds, the app pane must show `OTHER AUDIO` and `MUTED`
-   (default `hold_mode: mute`) or `PAUSED` with `hold_mode: pause`.
-3. In mute mode, confirm mpv and ffmpeg are still running but the output is
-   muted. In pause mode, confirm the analyser stops.
+2. Within a few seconds, the app pane must show `OTHER AUDIO` and `STOPPED`
+   with the default `hold_mode: stop`, or `PAUSED`/`MUTED` with the other modes.
+3. In stop/pause mode, confirm the analyser stops. In mute mode, confirm mpv and
+   ffmpeg are still running but muted.
 4. Close the video.
-5. Within two probes, the app must unmute and show `FILLING` again. Mute mode
-   must not re-resolve the stream.
+5. Within two probes, the app must show `FILLING` again. Stop mode re-resolves;
+   mute mode must not re-resolve.
 6. Stop the app and confirm no `lofi-hiphopper` mpv/ffmpeg processes remain.
 
 **Shortcuts and mouse**

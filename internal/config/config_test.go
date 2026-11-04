@@ -20,7 +20,7 @@ func TestDefaultIsValid(t *testing.T) {
 	if cfg.Radios[0].URL != "https://www.youtube.com/watch?v=rFZHOHl-L8A" {
 		t.Fatalf("first radio should be the default lofi stream, got %q", cfg.Radios[0].URL)
 	}
-	if cfg.Volume != 55 || cfg.Poll() != time.Second || !cfg.Autofill {
+	if cfg.Volume != 55 || cfg.Poll() != DefaultPollInterval || !cfg.Autofill {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 	if cfg.HoldMode != DefaultHoldMode {
@@ -47,7 +47,7 @@ func TestLoadMissingUsesDefaultsWithoutCreatingFile(t *testing.T) {
 }
 
 func TestDefaultYAMLIsExportable(t *testing.T) {
-	if !strings.Contains(DefaultYAML(), "poll_interval: 1s") || !strings.Contains(DefaultYAML(), "shortcuts:") {
+	if !strings.Contains(DefaultYAML(), "poll_interval: 500ms") || !strings.Contains(DefaultYAML(), "shortcuts:") {
 		t.Fatal("default YAML is missing expected sections")
 	}
 }
@@ -341,7 +341,7 @@ func TestHoldModeParsing(t *testing.T) {
 
 func TestHoldModeValidation(t *testing.T) {
 	cfg := Default()
-	cfg.HoldMode = "stop"
+	cfg.HoldMode = "yield"
 	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "hold_mode") {
 		t.Fatalf("Validate() = %v", err)
 	}

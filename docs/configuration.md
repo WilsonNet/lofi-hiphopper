@@ -39,9 +39,9 @@ lofi-hiphopper -config ./radio.yaml
 | --- | --- | --- |
 | `volume` | `55` | Use the value, including `0` |
 | `volume_step` | `5` | Use the value |
-| `poll_interval` | `1s` | Use the value |
+| `poll_interval` | `500ms` | Use the value |
 | `autofill` | `true` | Use the value, including `false` |
-| `hold_mode` | `mute` | `mute` or `pause` |
+| `hold_mode` | `stop` | `stop`, `pause`, or `mute` |
 | `bypass_apps` | `[]` | Replace the list of ignored apps |
 | `radios` | Built-in Lofi Girl list | Replace the radio list |
 | `shortcuts` | Built-in shortcut table | Merge by action; listed actions replace their keys, unlisted actions keep defaults |
@@ -78,16 +78,19 @@ automatically; calls still hold playback.
 
 ### `hold_mode`
 
-`mute` (default) or `pause`. This controls what happens while the app yields to
-a call or other audio.
+`stop` (default), `pause`, or `mute`. This controls what happens while the app
+yields to a call or other audio.
 
-- `mute` keeps mpv streaming, mutes it, and unmutes when silence returns. This is
-  seamless for livestreams and is the default for desktop internet connections.
+- `stop` stops mpv and the analyser, then resolves and plays the stream again
+  when silence returns. This is the regular start/stop behavior.
 - `pause` pauses mpv and stops the analyser. Playback resumes on silence. A
   paused livestream may resume behind the live edge.
+- `mute` keeps the stream and analyser running, mutes mpv, and unmutes on
+  silence. This is opt-in for people with fast internet who want a seamless
+  silent hold.
 
 ```yaml
-hold_mode: mute
+hold_mode: stop
 ```
 
 ### `bypass_apps`
@@ -192,9 +195,9 @@ published release binaries self-update.
 ```yaml
 volume: 55
 volume_step: 5
-poll_interval: 1s
+poll_interval: 500ms
 autofill: true
-hold_mode: mute
+hold_mode: stop
 bypass_apps: []
 
 radios:
