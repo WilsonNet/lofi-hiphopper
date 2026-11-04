@@ -69,11 +69,13 @@ output; a screenshot alone is not evidence of state.
 
 ## Configuration contract
 
-- Defaults live in code and are written as a commented YAML file on first run.
-- If the file is absent, the app uses all built-in defaults.
-- A user config only overrides the parts it specifies.
-- Scalars such as `volume`, `volume_step`, `poll_interval`, and `autofill`
-  override their default when present.
+- Defaults live in code and are embedded in the binary as commented YAML.
+- The app never creates, writes, or rewrites a config file. A missing file is
+  valid and means "use all defaults".
+- `-print-config` prints the embedded YAML for a user who wants to create a file.
+- A user-created config only overrides the parts it specifies.
+- Scalars such as `volume`, `volume_step`, `poll_interval`, `autofill`, and
+  `hold_mode` override their default when present.
 - `radios` replaces the default radio list when present.
 - `shortcuts` merges by action: listed actions replace their keys; unlisted
   actions keep their built-in keys.
@@ -88,13 +90,17 @@ output; a screenshot alone is not evidence of state.
   own output never counts as "other audio".
 - Calls win: any non-own input stream is a call and holds playback immediately.
 - Other output yields after debounce; notification pings must not pause music.
-- Live streams are stopped while held and re-resolved on resume; do not unpause
-  a stale live edge.
+- Default hold mode is mute: keep the stream and analyser alive, mute mpv, then
+  unmute on silence. `hold_mode: pause` is the opt-in pause mode.
+- Preserve the user's mute intent across a mute hold.
 - The analyzer is a separate silent ffmpeg decode. Playback must continue if the
   analyzer or visualizer fails.
 - UI drawing must stay within the canvas; all six visualizers must render at
   wide, compact, and minimal sizes without panics.
 - The player and analyzer processes must be cleaned up on quit and on error.
+- Update checks must not block the TUI or fail on offline/rate-limited networks.
+  Updates are checksum-verified, atomically replace the binary, and restart via
+  `syscall.Exec` after cleanup. Development versions do not self-update.
 
 ## Skills
 

@@ -1,8 +1,9 @@
 # Configuration
 
-`lofi-hiphopper` uses a POSIX-style YAML config file. It is designed to work
-with a partial file: every field has a built-in default, and a file only needs
-to contain the parts you want to change.
+`lofi-hiphopper` ships with its defaults inside the binary. No config file is
+created on install or first launch. If you want to customize something, create
+a POSIX-style YAML file yourself; every field is optional and only the parts
+you write override the defaults.
 
 ## Location
 
@@ -12,9 +13,19 @@ Resolution order:
 2. `$XDG_CONFIG_HOME/lofi-hiphopper/config.yaml` if `XDG_CONFIG_HOME` is set;
 3. `~/.config/lofi-hiphopper/config.yaml`.
 
-On first run the app creates a commented default file. If the file is missing or
-a field is omitted, the built-in default applies. The file is written with POSIX
-permissions (`0644`) and the directory with `0700`.
+If the file is missing, the built-in defaults apply and nothing is written. If
+the file exists, a field that is omitted keeps its built-in default. There is no
+automatic config creation, no backup file, and no rewrite.
+
+To create a starting point manually:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/lofi-hiphopper"
+lofi-hiphopper -print-config > "${XDG_CONFIG_HOME:-$HOME/.config}/lofi-hiphopper/config.yaml"
+```
+
+Then edit the file. `-print-config` prints the commented embedded default and
+exits without touching disk.
 
 Use `-config` to point at another file:
 
@@ -30,6 +41,7 @@ lofi-hiphopper -config ./radio.yaml
 | `volume_step` | `5` | Use the value |
 | `poll_interval` | `1s` | Use the value |
 | `autofill` | `true` | Use the value, including `false` |
+| `hold_mode` | `mute` | `mute` or `pause` |
 | `radios` | Built-in Lofi Girl list | Replace the radio list |
 | `shortcuts` | Built-in shortcut table | Merge by action; listed actions replace their keys, unlisted actions keep defaults |
 
@@ -62,6 +74,20 @@ consecutive samples.
 Boolean. When true, the first radio starts when the Mac is silent and resumes
 after calls or other audio stop. When false, silence does not start playback
 automatically; calls still hold playback.
+
+### `hold_mode`
+
+`mute` (default) or `pause`. This controls what happens while the app yields to
+a call or other audio.
+
+- `mute` keeps mpv streaming, mutes it, and unmutes when silence returns. This is
+  seamless for livestreams and is the default for desktop internet connections.
+- `pause` pauses mpv and stops the analyser. Playback resumes on silence. A
+  paused livestream may resume behind the live edge.
+
+```yaml
+hold_mode: mute
+```
 
 ### `radios`
 
@@ -113,6 +139,7 @@ Actions:
 | `toggle_autofill` | `a` | Toggle auto-fill |
 | `retry` | `r` | Restart/retry the selected radio |
 | `help` | `?` | Show the shortcut sheet |
+| `update` | `u` | Install a newer release when one is available |
 | `quit` | `q`, `ctrl+c` | Quit |
 
 Key syntax follows Bubble Tea key names: `enter`, `esc`, `tab`, `space` (write
@@ -132,6 +159,17 @@ action. `ctrl+c` is always an emergency quit even if removed from `quit`.
 
 The app reads the config at startup. Relaunch after editing it.
 
+## Updates
+
+The release build checks the public GitHub releases endpoint on launch. When a
+newer version exists, a `u update` hint appears in the footer. Press `u`, then
+`y` to install. The updater downloads the matching macOS archive, verifies its
+SHA-256 checksum, replaces the executable, and restarts the app. Press `n` or
+`esc` to cancel.
+
+Development builds (`version = "dev"`) do not check for updates. Only the
+published release binaries self-update.
+
 ## Full default
 
 ```yaml
@@ -139,6 +177,7 @@ volume: 55
 volume_step: 5
 poll_interval: 1s
 autofill: true
+hold_mode: mute
 
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -175,6 +214,8 @@ shortcuts:
     keys: ["r"]
   - action: help
     keys: ["?"]
+  - action: update
+    keys: ["u"]
   - action: quit
     keys: ["q", "ctrl+c"]
 ```
@@ -186,6 +227,7 @@ Invalid values fail at startup with a clear message. The app rejects:
 - volume outside `0`-`100`;
 - volume step outside `1`-`25`;
 - poll interval outside `250ms`-`30s`;
+- hold mode other than `mute` or `pause`;
 - an empty radio list or duplicate URLs;
 - unknown shortcut actions;
 - empty keys or duplicate action entries;

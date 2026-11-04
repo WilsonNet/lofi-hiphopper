@@ -20,7 +20,9 @@ const (
 	DefaultVolumeStep = 5
 	// DefaultPollInterval is how often the audio activity probe runs.
 	DefaultPollInterval = time.Second
-	appDir              = "lofi-hiphopper"
+	// DefaultHoldMode keeps the stream alive but muted while yielding.
+	DefaultHoldMode = "mute"
+	appDir          = "lofi-hiphopper"
 )
 
 // Duration exists so YAML can say "1s" instead of nanoseconds.
@@ -70,6 +72,7 @@ type Config struct {
 	VolumeStep   int        `yaml:"volume_step"`
 	PollInterval Duration   `yaml:"poll_interval"`
 	Autofill     bool       `yaml:"autofill"`
+	HoldMode     string     `yaml:"hold_mode"`
 	Radios       []Radio    `yaml:"radios"`
 	Shortcuts    []Shortcut `yaml:"shortcuts"`
 }
@@ -87,6 +90,7 @@ var shortcutOrder = []string{
 	"toggle_autofill",
 	"retry",
 	"help",
+	"update",
 	"quit",
 }
 
@@ -102,6 +106,7 @@ var shortcutLabels = map[string]string{
 	"toggle_autofill":     "auto-fill",
 	"retry":               "retry stream",
 	"help":                "shortcut list",
+	"update":              "update",
 	"quit":                "quit",
 }
 
@@ -120,6 +125,7 @@ func DefaultShortcuts() []Shortcut {
 		{Action: "toggle_autofill", Keys: []string{"a"}},
 		{Action: "retry", Keys: []string{"r"}},
 		{Action: "help", Keys: []string{"?"}},
+		{Action: "update", Keys: []string{"u"}},
 		{Action: "quit", Keys: []string{"q", "ctrl+c"}},
 	}
 }
@@ -171,6 +177,7 @@ func Default() Config {
 		VolumeStep:   DefaultVolumeStep,
 		PollInterval: Duration(DefaultPollInterval),
 		Autofill:     true,
+		HoldMode:     DefaultHoldMode,
 		Radios:       DefaultRadios(),
 		Shortcuts:    DefaultShortcuts(),
 	}
@@ -185,6 +192,11 @@ volume: 55
 volume_step: 5
 poll_interval: 1s
 autofill: true
+
+# While yielding to a call or other audio:
+#   mute  = keep streaming, mute, then unmute seamlessly (default)
+#   pause = pause the stream (live streams may resume behind the live edge)
+hold_mode: mute
 
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -223,6 +235,8 @@ shortcuts:
     keys: ["r"]
   - action: help
     keys: ["?"]
+  - action: update
+    keys: ["u"]
   - action: quit
     keys: ["q", "ctrl+c"]
 `
@@ -258,8 +272,10 @@ func expandHome(path string) string {
 	return path
 }
 
-// LoadOrCreate reads path, writing the commented default on first launch.
-func LoadOrCreate(path string) (cfg Config, created bool, err error) {
+// Load reads path. A missing file is not an error and never creates anything:
+// the built-in defaults stay in the binary. A file that exists only overrides
+// the parts it contains.
+func Load(path string) (Config, error) {
 	if strings.TrimSpace(path) == "" {
 		path = Path()
 	}
@@ -267,26 +283,30 @@ func LoadOrCreate(path string) (cfg Config, created bool, err error) {
 
 	data, readErr := os.ReadFile(path)
 	if errors.Is(readErr, os.ErrNotExist) {
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			return Config{}, false, fmt.Errorf("create config directory: %w", err)
+		cfg := Default()
+		if err := cfg.Validate(); err != nil {
+			return Config{}, err
 		}
-		if err := os.WriteFile(path, []byte(defaultYAML), 0o644); err != nil {
-			return Config{}, false, fmt.Errorf("write default config: %w", err)
-		}
-		data = []byte(defaultYAML)
-		created = true
-	} else if readErr != nil {
-		return Config{}, false, fmt.Errorf("read config %s: %w", path, readErr)
+		return cfg, nil
+	}
+	if readErr != nil {
+		return Config{}, fmt.Errorf("read config %s: %w", path, readErr)
 	}
 
-	cfg = Default()
+	cfg := Default()
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return Config{}, created, fmt.Errorf("parse config %s: %w", path, err)
+		return Config{}, fmt.Errorf("parse config %s: %w", path, err)
 	}
 	if err := cfg.Validate(); err != nil {
-		return Config{}, created, fmt.Errorf("invalid config %s: %w", path, err)
+		return Config{}, fmt.Errorf("invalid config %s: %w", path, err)
 	}
-	return cfg, created, nil
+	return cfg, nil
+}
+
+// DefaultYAML returns the commented built-in configuration. Nothing writes it
+// automatically; users can redirect it when they choose to create a file.
+func DefaultYAML() string {
+	return defaultYAML
 }
 
 // Validate rejects configurations that would fail mysteriously at runtime.
@@ -296,6 +316,10 @@ func (c *Config) Validate() error {
 	}
 	if c.VolumeStep < 1 || c.VolumeStep > 25 {
 		return fmt.Errorf("volume_step must be between 1 and 25 (got %d)", c.VolumeStep)
+	}
+	c.HoldMode = strings.ToLower(strings.TrimSpace(c.HoldMode))
+	if c.HoldMode != "mute" && c.HoldMode != "pause" {
+		return fmt.Errorf("hold_mode must be \"mute\" or \"pause\" (got %q)", c.HoldMode)
 	}
 	interval := time.Duration(c.PollInterval)
 	if interval < 250*time.Millisecond || interval > 30*time.Second {

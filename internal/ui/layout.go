@@ -26,6 +26,9 @@ func (m *Model) View() string {
 	if m.helpOpen {
 		m.drawHelp(canvas)
 	}
+	if m.updateDialog {
+		m.drawUpdateDialog(canvas)
+	}
 	return canvas.Render()
 }
 
@@ -295,7 +298,7 @@ func (m *Model) drawSignalCard(canvas *Canvas, x, y, width, height int) {
 	spectrumText, spectrumColor := "waiting", Muted
 	if m.audioErr != nil {
 		spectrumText, spectrumColor = "offline", Danger
-	} else if m.state == statePlaying {
+	} else if m.state == statePlaying || m.muteHold {
 		spectrumText, spectrumColor = "live", Success
 	} else if m.state == stateSuspended {
 		spectrumText, spectrumColor = "held", Peach
@@ -306,7 +309,7 @@ func (m *Model) drawSignalCard(canvas *Canvas, x, y, width, height int) {
 	} else if m.snap.Running {
 		playerText, playerColor = fmt.Sprintf("mpv · %d%%", m.volume), Success
 	}
-	if m.muted {
+	if m.muted || m.muteHold {
 		playerText, playerColor = "mpv · muted", Peach
 		if m.demo {
 			playerText = "demo · muted"
@@ -377,7 +380,11 @@ func (m *Model) drawNowCard(canvas *Canvas, x, y, width, height int) {
 			hint = "retrying in " + shortDuration(time.Until(m.retryAt)) + " · press r"
 			hintColor = Peach
 		case m.state == stateSuspended:
-			hint = "held for " + m.pauseReason + " · auto-resumes"
+			action := "held"
+			if m.muteHold {
+				action = "muted"
+			}
+			hint = action + " for " + m.pauseReason + " · auto-resumes"
 			hintColor = Peach
 		case m.state == stateIdle && m.ready:
 			hint = "waiting for silence · auto-fill"
@@ -466,7 +473,11 @@ func (m *Model) drawVisualizerOverlay(canvas *Canvas, x, y, width, height int) {
 	case m.state == stateTuning:
 		label = "TUNING STREAM"
 	case m.state == stateSuspended:
-		label = "PAUSED · " + strings.ToUpper(m.pauseReason)
+		if m.muteHold {
+			label = "MUTED · " + strings.ToUpper(m.pauseReason)
+		} else {
+			label = "PAUSED · " + strings.ToUpper(m.pauseReason)
+		}
 	case m.state == stateRetrying:
 		label = "RECONNECTING"
 	case m.state == statePlaying && m.audioErr != nil:
@@ -555,20 +566,21 @@ func (m *Model) drawProgress(canvas *Canvas, x, y, width int) {
 }
 
 func (m *Model) drawVolume(canvas *Canvas, x, y, width int) {
+	actualMuted := m.muted || m.muteHold
 	label := "VOL"
 	labelColor := Dim
-	if m.muted {
+	if actualMuted {
 		label = "MUTED"
 		labelColor = Danger
 	}
-	canvas.Text(x, y, label, Style{FG: labelColor, BG: PanelBG, Bold: m.muted})
+	canvas.Text(x, y, label, Style{FG: labelColor, BG: PanelBG, Bold: actualMuted})
 	barX := x + 6
 	barWidth := min(14, max(4, width-12))
 	filled := int(math.Round(float64(m.volume) / 100 * float64(barWidth)))
 	for i := 0; i < barWidth; i++ {
 		color := shade(BorderColor, 1.5)
 		glyph := '░'
-		if m.muted {
+		if actualMuted {
 			color = shade(BorderColor, 1.2)
 		} else if i < filled {
 			color = warmGradient(0.35 + 0.55*float64(i)/float64(max(1, barWidth-1)))
@@ -577,7 +589,7 @@ func (m *Model) drawVolume(canvas *Canvas, x, y, width int) {
 		canvas.Set(barX+i, y, glyph, color)
 	}
 	percent := fmt.Sprintf("%d%%", m.volume)
-	if m.muted {
+	if actualMuted {
 		percent = ""
 	}
 	canvas.TextClipped(barX+barWidth+1, y, max(1, width-(barX+barWidth+1-x)), percent, Style{FG: Muted, BG: PanelBG})
@@ -594,17 +606,36 @@ func (m *Model) drawFooter(canvas *Canvas, x, width, statusY, keysY int) {
 	if !m.autofill {
 		shortAuto = "AUTO OFF"
 	}
-	textWidth := max(1, width-2)
-	if width >= 56 {
-		textWidth = max(10, width-2-len([]rune(auto))-2)
-	} else if width >= 40 {
-		textWidth = max(8, width-2-len([]rune(shortAuto))-2)
+	autoText := auto
+	if width < 56 {
+		autoText = shortAuto
 	}
+	updateText := ""
+	if m.updateAvailable {
+		updateText = m.hintKey("update") + " update"
+	}
+	showAuto := width >= 40
+	if updateText != "" && width < 86 {
+		showAuto = false
+	}
+	rightWidth := 0
+	if showAuto {
+		rightWidth += len([]rune(autoText))
+	}
+	if updateText != "" {
+		if rightWidth > 0 {
+			rightWidth += 2
+		}
+		rightWidth += len([]rune(updateText))
+	}
+	textWidth := max(1, width-2-rightWidth-2)
 	canvas.TextClipped(x+2, statusY, textWidth, text, Style{FG: Ink, BG: Background})
-	if width >= 56 {
-		drawRightText(canvas, x+width, statusY, auto, Style{FG: Muted, BG: Background, Bold: m.autofill})
-	} else if width >= 40 {
-		drawRightText(canvas, x+width, statusY, shortAuto, Style{FG: Muted, BG: Background, Bold: m.autofill})
+	rightX := x + width
+	if updateText != "" {
+		rightX = drawRightText(canvas, rightX, statusY, updateText, Style{FG: Cream, BG: Background, Bold: true}) - 2
+	}
+	if showAuto {
+		drawRightText(canvas, rightX, statusY, autoText, Style{FG: Muted, BG: Background, Bold: m.autofill})
 	}
 
 	muteKey := m.hintKey("mute")
@@ -730,7 +761,10 @@ func (m *Model) playbackLabel() string {
 		}
 		return "● PLAYING"
 	case stateSuspended:
-		return "❚❚ HELD"
+		if m.muteHold {
+			return "♪ MUTED"
+		}
+		return "❚❚ PAUSED"
 	case stateRetrying:
 		return "↻ RETRYING"
 	case stateIdle:
@@ -753,7 +787,10 @@ func (m *Model) stateBadge() string {
 		}
 		return "PLAYING"
 	case stateSuspended:
-		return "HELD"
+		if m.muteHold {
+			return "MUTED"
+		}
+		return "PAUSED"
 	case stateRetrying:
 		return "RETRY"
 	case stateIdle:

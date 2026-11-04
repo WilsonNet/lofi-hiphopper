@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -22,35 +23,32 @@ func TestDefaultIsValid(t *testing.T) {
 	if cfg.Volume != 55 || cfg.Poll() != time.Second || !cfg.Autofill {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
+	if cfg.HoldMode != DefaultHoldMode {
+		t.Fatalf("hold mode = %q, want %q", cfg.HoldMode, DefaultHoldMode)
+	}
 }
 
-func TestLoadOrCreateWritesDefaultsOnce(t *testing.T) {
+func TestLoadMissingUsesDefaultsWithoutCreatingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "config.yaml")
 
-	cfg, created, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
-		t.Fatalf("LoadOrCreate: %v", err)
-	}
-	if !created {
-		t.Fatal("first load should report created")
+		t.Fatalf("Load: %v", err)
 	}
 	if len(cfg.Radios) != len(DefaultRadios()) {
 		t.Fatalf("got %d radios, want %d", len(cfg.Radios), len(DefaultRadios()))
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read default config: %v", err)
+	if _, statErr := os.Stat(path); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("missing config should stay missing, stat error = %v", statErr)
 	}
-	if !strings.Contains(string(data), "poll_interval: 1s") {
-		t.Fatalf("default config lacks human duration:\n%s", data)
+	if _, statErr := os.Stat(filepath.Dir(path)); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("missing config directory should stay missing, stat error = %v", statErr)
 	}
+}
 
-	_, created, err = LoadOrCreate(path)
-	if err != nil {
-		t.Fatalf("second LoadOrCreate: %v", err)
-	}
-	if created {
-		t.Fatal("second load should not recreate the file")
+func TestDefaultYAMLIsExportable(t *testing.T) {
+	if !strings.Contains(DefaultYAML(), "poll_interval: 1s") || !strings.Contains(DefaultYAML(), "shortcuts:") {
+		t.Fatal("default YAML is missing expected sections")
 	}
 }
 
@@ -63,9 +61,9 @@ func TestLoadAppliesDefaultsToOmittedFields(t *testing.T) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
-		t.Fatalf("LoadOrCreate: %v", err)
+		t.Fatalf("Load: %v", err)
 	}
 	if cfg.Volume != DefaultVolume {
 		t.Errorf("volume = %d, want %d", cfg.Volume, DefaultVolume)
@@ -88,7 +86,7 @@ radios:
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +105,7 @@ radios:
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +201,7 @@ autofill: false
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +231,7 @@ func TestRadiosReplaceDefaults(t *testing.T) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +254,7 @@ func TestShortcutMerge(t *testing.T) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cfg, _, err := LoadOrCreate(path)
+	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,5 +321,28 @@ func TestDefaultYAMLMatchesDefaults(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, Default()) {
 		t.Fatalf("default YAML drifted from Default():\ngot  %+v\nwant %+v", got, Default())
+	}
+}
+
+func TestHoldModeParsing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := "hold_mode: PAUSE\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.HoldMode != "pause" {
+		t.Fatalf("hold mode = %q", cfg.HoldMode)
+	}
+}
+
+func TestHoldModeValidation(t *testing.T) {
+	cfg := Default()
+	cfg.HoldMode = "stop"
+	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "hold_mode") {
+		t.Fatalf("Validate() = %v", err)
 	}
 }

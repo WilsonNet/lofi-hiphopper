@@ -17,6 +17,7 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/detect"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/media"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/player"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/update"
 )
 
 // Player is the subset of mpv control the TUI needs.
@@ -50,19 +51,25 @@ type Probe interface {
 	Processes() ([]detect.Process, error)
 }
 
+// Updater checks GitHub releases and applies them.
+type Updater interface {
+	Check(ctx context.Context) (update.Release, bool, error)
+	Apply(ctx context.Context, release update.Release) error
+}
+
 // Deps wires the TUI to the outside world.
 type Deps struct {
 	Player   Player
 	Analyzer Analyzer
 	Resolver Resolver
 	Probe    Probe
+	Updater  Updater
 }
 
 // Options configures the model.
 type Options struct {
-	Demo          bool
-	ConfigPath    string
-	CreatedConfig bool
+	Demo       bool
+	ConfigPath string
 }
 
 type playbackState int
@@ -114,6 +121,7 @@ type Model struct {
 	pauseReason     string
 	suspendedStop   bool
 	resumeOnSilence bool
+	muteHold        bool
 
 	autofill bool
 	volume   int
@@ -150,6 +158,13 @@ type Model struct {
 	notice      string
 	noticeKind  noticeKind
 	noticeUntil time.Time
+
+	updateAvailable  bool
+	updateRelease    update.Release
+	updateDialog     bool
+	updating         bool
+	updateErr        error
+	restartRequested bool
 
 	demoPhase float64
 }
@@ -208,9 +223,6 @@ func New(cfg config.Config, deps Deps, options Options) *Model {
 		}
 		m.stream = media.Stream{Title: title, Live: true}
 	}
-	if options.CreatedConfig {
-		m.setNotice("config created · "+options.ConfigPath, noticeInfo, 8*time.Second)
-	}
 	return m
 }
 
@@ -218,7 +230,7 @@ func New(cfg config.Config, deps Deps, options Options) *Model {
 func (m *Model) Init() tea.Cmd {
 	if m.demo {
 		m.setNotice("demo mode · simulated spectrum", noticeInfo, 4*time.Second)
-		return m.animationTick()
+		return tea.Batch(m.animationTick(), m.updateCheckCmd())
 	}
 	if len(m.radios) == 0 {
 		m.setNotice("no radios configured", noticeBad, 10*time.Second)
@@ -230,6 +242,7 @@ func (m *Model) Init() tea.Cmd {
 		m.startPlayerCmd(),
 		m.detectCmd(),
 		m.detectionTick(),
+		m.updateCheckCmd(),
 	}
 	return tea.Batch(cmds...)
 }
@@ -289,6 +302,12 @@ type (
 		stream media.Stream
 		err    error
 	}
+	updateCheckMsg struct {
+		release   update.Release
+		available bool
+		err       error
+	}
+	updateAppliedMsg struct{ err error }
 )
 
 // Update implements tea.Model.
@@ -340,6 +359,22 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tuneMsg:
 		return m, m.handleTune(message)
+	case updateCheckMsg:
+		if message.err == nil && message.available {
+			m.updateAvailable = true
+			m.updateRelease = message.release
+		}
+		return m, nil
+	case updateAppliedMsg:
+		m.updating = false
+		if message.err != nil {
+			m.updateErr = message.err
+			return m, nil
+		}
+		m.updateDialog = false
+		m.updateAvailable = false
+		m.restartRequested = true
+		return m, m.quit()
 	}
 	return m, nil
 }
@@ -347,6 +382,9 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) handleKey(key string) tea.Cmd {
 	if key == "ctrl+c" {
 		return m.quit()
+	}
+	if m.updateDialog {
+		return m.handleUpdateKey(key)
 	}
 	if m.helpOpen {
 		if key == "esc" {
@@ -398,7 +436,11 @@ func (m *Model) performAction(action string) tea.Cmd {
 	case "mute":
 		m.muted = !m.muted
 		m.muteChangedAt = m.now
-		m.setNotice(map[bool]string{true: "muted", false: "sound on"}[m.muted], noticeInfo, 2*time.Second)
+		notice := map[bool]string{true: "muted", false: "sound on"}[m.muted]
+		if m.muteHold && !m.muted {
+			notice = "held · unmute after silence"
+		}
+		m.setNotice(notice, noticeInfo, 2*time.Second)
 		return m.setMuteCmd(m.muted)
 	case "volume_up":
 		return m.changeVolume(m.volumeStep)
@@ -430,8 +472,65 @@ func (m *Model) performAction(action string) tea.Cmd {
 		return m.sync()
 	case "retry":
 		return m.restart()
+	case "update":
+		if m.updating {
+			return nil
+		}
+		if !m.updateAvailable {
+			m.setNotice("no update available", noticeInfo, 2*time.Second)
+			return nil
+		}
+		m.updateDialog = true
+		m.updateErr = nil
+		return nil
 	}
 	return nil
+}
+
+func (m *Model) handleUpdateKey(key string) tea.Cmd {
+	if m.updating {
+		return nil
+	}
+	switch strings.ToLower(key) {
+	case "y":
+		m.updating = true
+		m.updateErr = nil
+		return m.applyUpdateCmd()
+	case "n", "esc":
+		m.updateDialog = false
+	}
+	return nil
+}
+
+func (m *Model) updateCheckCmd() tea.Cmd {
+	if m.deps.Updater == nil {
+		return nil
+	}
+	updater := m.deps.Updater
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		release, available, err := updater.Check(ctx)
+		return updateCheckMsg{release: release, available: available, err: err}
+	}
+}
+
+func (m *Model) applyUpdateCmd() tea.Cmd {
+	if m.deps.Updater == nil || m.updateRelease.Version == "" {
+		return nil
+	}
+	updater := m.deps.Updater
+	release := m.updateRelease
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+		return updateAppliedMsg{err: updater.Apply(ctx, release)}
+	}
+}
+
+// RestartRequested tells main to exec the replaced binary after the TUI exits.
+func (m *Model) RestartRequested() bool {
+	return m.restartRequested
 }
 
 func (m *Model) quit() tea.Cmd {
@@ -486,22 +585,25 @@ func (m *Model) changeVolume(delta int) tea.Cmd {
 		m.muteChangedAt = m.now
 		unmute = true
 	}
-	m.setNotice(fmt.Sprintf("volume · %d%%", m.volume), noticeInfo, 2*time.Second)
+	notice := fmt.Sprintf("volume · %d%%", m.volume)
+	if m.muteHold && unmute {
+		notice = "held · volume saved for resume"
+	}
+	m.setNotice(notice, noticeInfo, 2*time.Second)
 	if m.demo || m.deps.Player == nil {
 		return nil
 	}
 	playerService := m.deps.Player
 	volume := m.volume
+	targetMuted := m.muted || m.muteHold
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		if err := playerService.SetVolume(ctx, volume); err != nil {
 			return playerActionMsg{action: "volume", err: err}
 		}
-		if unmute {
-			if err := playerService.SetMute(ctx, false); err != nil {
-				return playerActionMsg{action: "unmute", err: err}
-			}
+		if err := playerService.SetMute(ctx, targetMuted); err != nil {
+			return playerActionMsg{action: "mute", err: err}
 		}
 		return playerActionMsg{action: "volume"}
 	}
@@ -512,10 +614,11 @@ func (m *Model) setMuteCmd(muted bool) tea.Cmd {
 		return nil
 	}
 	playerService := m.deps.Player
+	targetMuted := muted || m.muteHold
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		if err := playerService.SetMute(ctx, muted); err != nil {
+		if err := playerService.SetMute(ctx, targetMuted); err != nil {
 			return playerActionMsg{action: "mute", err: err}
 		}
 		return playerActionMsg{action: "mute"}
@@ -528,7 +631,7 @@ func (m *Model) applyAudioPrefsCmd() tea.Cmd {
 	}
 	playerService := m.deps.Player
 	volume := m.volume
-	muted := m.muted
+	muted := m.muted || m.muteHold
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
@@ -613,6 +716,7 @@ func (m *Model) suspend(reason string) tea.Cmd {
 		m.cancelTune()
 		m.state = stateSuspended
 		m.suspendedStop = true
+		m.muteHold = false
 		if m.deps.Analyzer != nil {
 			m.deps.Analyzer.Stop()
 		}
@@ -625,20 +729,25 @@ func (m *Model) suspend(reason string) tea.Cmd {
 		return nil
 	}
 	m.state = stateSuspended
-	if m.deps.Analyzer != nil {
-		m.deps.Analyzer.Stop()
-	}
 	playerService := m.deps.Player
-	if m.stream.Live || m.loaded < 0 {
-		m.suspendedStop = true
-		m.loaded = -1
-		return m.playerAction("stop", func(ctx context.Context) error {
-			return playerService.Stop(ctx)
+
+	if m.cfg.HoldMode == "pause" {
+		m.muteHold = false
+		m.suspendedStop = false
+		if m.deps.Analyzer != nil {
+			m.deps.Analyzer.Stop()
+		}
+		return m.playerAction("pause", func(ctx context.Context) error {
+			return playerService.Pause(ctx, true)
 		})
 	}
+
+	// Mute hold keeps the stream and the visualizer alive. The user's mute
+	// intent is stored in m.muted; this hold is temporary.
+	m.muteHold = true
 	m.suspendedStop = false
-	return m.playerAction("pause", func(ctx context.Context) error {
-		return playerService.Pause(ctx, true)
+	return m.playerAction("mute hold", func(ctx context.Context) error {
+		return playerService.SetMute(ctx, true)
 	})
 }
 
@@ -649,8 +758,19 @@ func (m *Model) resume() tea.Cmd {
 	if m.state != stateSuspended && m.state != stateIdle && m.state != stateRetrying {
 		return nil
 	}
-	if m.suspendedStop || m.stream.Live || m.loaded != m.current || m.stream.URL == "" {
+	if m.suspendedStop || m.loaded != m.current || m.stream.URL == "" {
 		return m.startTune(m.current, "resume")
+	}
+	if m.muteHold {
+		m.state = statePlaying
+		m.muteHold = false
+		m.resumeOnSilence = false
+		m.pauseReason = ""
+		userMuted := m.muted
+		playerService := m.deps.Player
+		return m.playerAction("unmute", func(ctx context.Context) error {
+			return playerService.SetMute(ctx, userMuted)
+		})
 	}
 	m.state = statePlaying
 	m.resumeOnSilence = false
@@ -739,6 +859,7 @@ func (m *Model) startTune(index int, reason string) tea.Cmd {
 	m.state = stateTuning
 	m.suspendedStop = false
 	m.resumeOnSilence = false
+	m.muteHold = false
 	m.pauseReason = ""
 	m.retryAt = m.now
 	m.lastFrameAt = time.Time{}
@@ -826,6 +947,7 @@ func (m *Model) handleTune(message tuneMsg) tea.Cmd {
 	m.audioErr = nil
 	m.suspendedStop = false
 	m.resumeOnSilence = false
+	m.muteHold = false
 	m.retryBackoff = minRetry
 	m.retryAt = m.now
 	if message.stream.Title != "" {
@@ -902,7 +1024,7 @@ drained:
 	if m.state == statePlaying && !m.snap.Paused && !m.lastFrameAt.IsZero() && m.now.Sub(m.lastFrameAt) > 5*time.Second && m.audioErr == nil {
 		m.audioErr = errors.New("spectrum offline · no frames from ffmpeg")
 	}
-	if m.state == statePlaying && !m.snap.Paused && received {
+	if (m.state == statePlaying || m.muteHold) && !m.snap.Paused && received {
 		m.viz.Advance(latest.Bands, latest.Wave)
 	} else {
 		m.viz.Advance(nil, nil)
@@ -919,7 +1041,7 @@ func (m *Model) pumpPlayer() tea.Cmd {
 	if m.now.Sub(m.volumeChangedAt) > time.Second && snapshot.Running {
 		m.volume = clampInt(snapshot.Volume, 0, 100)
 	}
-	if m.now.Sub(m.muteChangedAt) > time.Second && snapshot.Running {
+	if !m.muteHold && m.now.Sub(m.muteChangedAt) > time.Second && snapshot.Running {
 		m.muted = snapshot.Muted
 	}
 	if snapshot.Error != "" {

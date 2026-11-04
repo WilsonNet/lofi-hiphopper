@@ -78,12 +78,22 @@ Read `docs/architecture.md` first. Preserve these invariants:
 - the player's own PID is excluded;
 - calls suspend immediately;
 - output yields only after debounce;
-- live streams stop and re-resolve while held;
+- the default mute hold keeps the stream and analyser alive and restores the
+  user's mute intent;
+- pause mode stops the analyser and unpauses on resume;
 - analyzer failure does not stop playback;
 - retries use backoff and reset on success.
 
 Test with fakes first, then with real mpv and real CoreAudio. Use a Herdr tab
 and a low-volume config.
+
+## Updates
+
+The updater lives in `internal/update`. Release assets must keep the names
+`lofi-hiphopper_darwin_arm64.tar.gz`, `lofi-hiphopper_darwin_amd64.tar.gz`, and
+`checksums.txt`. The TUI exposes the update check as a command so it never
+blocks input. Test checks and downloads with an `httptest` server; keep the
+restart path behind `syscall.Exec` in `main`.
 
 ## Screenshots
 

@@ -16,7 +16,7 @@ var helpSections = []helpSection{
 	{title: "PLAYBACK", actions: []string{"play", "volume_up", "volume_down", "mute", "toggle_autofill", "retry"}},
 	{title: "RADIO", actions: []string{"next_radio", "previous_radio"}},
 	{title: "VISUALIZER", actions: []string{"next_visualizer", "previous_visualizer"}},
-	{title: "SYSTEM", actions: []string{"help", "quit"}},
+	{title: "SYSTEM", actions: []string{"help", "update", "quit"}},
 }
 
 type helpLine struct {

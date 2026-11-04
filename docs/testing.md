@@ -25,8 +25,8 @@ go build ./...
 ```
 
 The current suite has 100+ tests and includes table-driven config, shortcut,
-detection, tracker, FFT, band mapping, IPC, player, layout, canvas, visualizer,
-and model tests.
+hold-mode, detection, tracker, FFT, band mapping, IPC, player, update, layout,
+canvas, visualizer, and model tests.
 
 ## Real mpv test
 
@@ -90,11 +90,13 @@ radios:
 
 1. Open a YouTube video with real/headded audio (or the Playwright browser if
    it produces a real CoreAudio stream).
-2. Within a few seconds, the app pane must show `OTHER AUDIO` and `HELD` /
-   `WAITING FOR SILENCE`.
-3. Confirm the analyser child is stopped.
+2. Within a few seconds, the app pane must show `OTHER AUDIO` and `MUTED`
+   (default `hold_mode: mute`) or `PAUSED` with `hold_mode: pause`.
+3. In mute mode, confirm mpv and ffmpeg are still running but the output is
+   muted. In pause mode, confirm the analyser stops.
 4. Close the video.
-5. Within two probes plus resolve time, the app must show `FILLING` again.
+5. Within two probes, the app must unmute and show `FILLING` again. Mute mode
+   must not re-resolve the stream.
 6. Stop the app and confirm no `lofi-hiphopper` mpv/ffmpeg processes remain.
 
 **Shortcuts and mouse**
@@ -108,15 +110,28 @@ radios:
    - ctrl+wheel changes the visualizer.
 4. Press `?` again and confirm mouse wheel is ignored while the modal is open.
 
+**Updates**
+
+1. Build a copy with `-ldflags "-X main.version=0.2.0"` and run it against a
+   local release API fixture (`LOFI_UPDATE_API`) that serves a newer archive
+   and checksums.
+2. Confirm the footer shows the update key, `u` opens the dialog, `n` cancels,
+   and `y` downloads, verifies, replaces the binary, and re-execs.
+3. Confirm a bad checksum leaves the old binary intact.
+4. Unit tests in `internal/update` cover semver comparison, API parsing,
+   checksum verification, extraction, and replacement.
+
 **Configuration**
 
-1. Start with no config in a temporary HOME; confirm defaults are used and a
-   commented file is created.
-2. Create a config containing only `volume: 17`; confirm radios, shortcuts, and
+1. Start with no config in a temporary HOME; confirm defaults are used and no
+   file or directory is created.
+2. Run `lofi-hiphopper -print-config`; confirm it prints valid YAML and does not
+   write a file.
+3. Create a config containing only `volume: 17`; confirm radios, shortcuts, and
    poll interval still use defaults.
-3. Add a partial `shortcuts` block changing `mute` to `x`; confirm `m` no longer
+4. Add a partial `shortcuts` block changing `mute` to `x`; confirm `m` no longer
    mutes and `x` does, while other keys work.
-4. Confirm invalid duplicate bindings fail with a clear error.
+5. Confirm invalid duplicate bindings fail with a clear error.
 
 ## Evidence
 

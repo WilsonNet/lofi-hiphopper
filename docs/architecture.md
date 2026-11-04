@@ -43,19 +43,21 @@ that it is offline.
 | `internal/media` | yt-dlp invocation and direct URL resolution |
 | `internal/player` | mpv process lifecycle and JSON IPC |
 | `internal/audio` | ffmpeg PCM decode, FFT, bands, waveform frames |
+| `internal/update` | GitHub release check, checksum verification, binary replacement |
 | `internal/ui` | Bubble Tea model, canvas, layout, help, six visualizers |
 | `main.go` | flags, dependency checks, process wiring, cleanup |
 
 ## Configuration model
 
-`config.Default()` is the single source of built-in defaults. `LoadOrCreate`
-reads the file into a prefilled `Config`; missing fields therefore keep their
+`config.Default()` is the single source of built-in defaults. `Load` reads the
+file only when it exists and never writes it. Missing fields keep their
 defaults. `radios` replaces the default slice when present. `shortcuts` is
 normalized by action: defaults fill every action first, then user entries
 replace matching actions. Duplicate keys are rejected across actions.
 
-The default YAML is a commented copy of the same defaults. It is written only on
-first launch; the app never rewrites a user file.
+The commented YAML is embedded in the binary for `-print-config`. It is never
+written automatically; a user redirects that output only when they choose to
+create a config.
 
 ## Audio activity detection
 
@@ -89,9 +91,11 @@ Player states are `idle`, `tuning`, `playing`, `suspended`, and `retrying`.
 - `OtherAudio` with auto-fill on suspends playback; with auto-fill off it keeps
   playing unless a call is active.
 - `Call` always suspends.
-- Live streams are stopped while suspended and resolved again on resume, so the
-  listener returns to the live edge rather than an old buffer.
-- Non-live streams are paused and resumed.
+- The default `hold_mode: mute` keeps mpv and the analyser running, mutes the
+  output, and unmutes on resume. This returns to the live edge seamlessly.
+- `hold_mode: pause` pauses mpv and stops the analyser; resume restarts the
+  analyser and unpauses. A paused livestream may be behind the live edge.
+- The user's manual mute intent is preserved across a mute hold.
 - Stream loss schedules exponential retries (3s → 30s). A successful resolve
   resets the backoff.
 - Tuning is cancellable. An epoch and mutex prevent a slow resolve from
@@ -175,6 +179,20 @@ Mouse wheel events come from `tea.WithMouseCellMotion`. Modifier bits are
 translated into the same binding tokens as keyboard keys, so shortcuts and mouse
 gestures share one editable table.
 
+## Updates
+
+`internal/update` checks `GET /repos/WilsonNet/lofi-hiphopper/releases/latest`
+with a short timeout. The UI runs this check as a Bubble Tea command at launch;
+network failures are silent and never block the TUI.
+
+When the latest semver tag is newer, the footer exposes the configured update
+key. Confirming downloads the matching `darwin/<arch>` archive and
+`checksums.txt`, verifies SHA-256, extracts the binary, writes a temporary file
+next to the running executable, and renames it into place. The TUI then exits,
+main cleans up mpv/ffmpeg, and `syscall.Exec` replaces the process with the new
+binary using the same arguments. Development builds are not release versions,
+so they do not self-update.
+
 ## Failure behavior
 
 | Failure | Behavior |
@@ -183,6 +201,8 @@ gestures share one editable table.
 | mpv exits | UI reports it; next tune restarts mpv |
 | ffmpeg fails | Playback continues; visualizer shows offline |
 | CoreAudio probe fails | Detection notice; manual play still works |
+| Update check fails | Silent; the TUI works normally |
+| Update download/checksum fails | Dialog shows the error; the old binary stays intact |
 | Live stream ends | Retry/backoff while silence; reset on success |
 | Terminal too small | Minimal layout; canvas stays in bounds |
 

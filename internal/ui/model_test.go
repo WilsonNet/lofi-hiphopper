@@ -15,6 +15,7 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/detect"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/media"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/player"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/update"
 )
 
 type fakePlayer struct {
@@ -99,6 +100,12 @@ func (f *fakePlayer) emit(event player.Event) {
 	f.events <- event
 }
 
+func (f *fakePlayer) resetCalls() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = nil
+}
+
 func (f *fakePlayer) hasCall(name string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -136,6 +143,7 @@ type fakeAnalyzer struct {
 	mu     sync.Mutex
 	frames chan audio.Frame
 	starts []string
+	stops  int
 	err    error
 }
 
@@ -150,7 +158,11 @@ func (f *fakeAnalyzer) Start(uri string) {
 	f.err = nil
 }
 
-func (f *fakeAnalyzer) Stop() {}
+func (f *fakeAnalyzer) Stop() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.stops++
+}
 
 func (f *fakeAnalyzer) Frames() <-chan audio.Frame { return f.frames }
 
@@ -179,7 +191,11 @@ type testRig struct {
 
 func newRig(t *testing.T) *testRig {
 	t.Helper()
-	cfg := config.Default()
+	return newRigWithConfig(t, config.Default())
+}
+
+func newRigWithConfig(t *testing.T, cfg config.Config) *testRig {
+	t.Helper()
 	rig := &testRig{
 		player:   newFakePlayer(),
 		resolver: &fakeResolver{},
@@ -245,9 +261,11 @@ func TestInitialSilenceStartsDefaultRadio(t *testing.T) {
 	}
 }
 
-func TestCallSuspendsAndResumesAfterTwoSilentSamples(t *testing.T) {
+func TestCallMutesAndResumesWithoutReloading(t *testing.T) {
 	rig := newRig(t)
 	rig.startPlayback(t)
+	rig.player.resetCalls()
+	rig.analyzer.stops = 0
 
 	cmd := rig.detect(detect.Process{PID: 7, Name: "zoom.us", Input: true, Output: true})
 	if cmd != nil {
@@ -263,8 +281,17 @@ func TestCallSuspendsAndResumesAfterTwoSilentSamples(t *testing.T) {
 	if rig.model.pauseReason != "call" {
 		t.Fatalf("reason = %q", rig.model.pauseReason)
 	}
-	if !rig.player.hasCall("stop") {
-		t.Fatalf("live call did not stop mpv: %v", rig.player.calls)
+	if !rig.model.muteHold {
+		t.Fatal("default hold mode should mute, not pause")
+	}
+	if !rig.player.Snapshot().Muted {
+		t.Fatal("mpv was not muted by the hold")
+	}
+	if rig.player.hasCall("stop") || rig.player.hasCall("pause") {
+		t.Fatalf("mute hold should not stop or pause mpv: %v", rig.player.calls)
+	}
+	if rig.analyzer.stops != 0 {
+		t.Fatalf("mute hold should leave the analyzer running: stops=%d", rig.analyzer.stops)
 	}
 
 	if cmd := rig.detect(); cmd != nil {
@@ -274,19 +301,89 @@ func TestCallSuspendsAndResumesAfterTwoSilentSamples(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("two silent samples did not resume")
 	}
-	message := cmd()
-	if _, ok := message.(tuneMsg); !ok {
-		t.Fatalf("resume returned %T", message)
+	msg := cmd()
+	if _, ok := msg.(playerActionMsg); !ok {
+		t.Fatalf("resume returned %T, want mute change", msg)
 	}
-	_, next := rig.model.Update(message)
-	if next != nil {
-		_ = runCommand(next)
+	_ = msg
+	if rig.model.state != statePlaying || rig.model.muteHold {
+		t.Fatalf("state/muteHold = %v/%v", rig.model.state, rig.model.muteHold)
+	}
+	if rig.player.Snapshot().Muted {
+		t.Fatal("resume did not unmute mpv")
+	}
+	if rig.resolver.calls != 1 {
+		t.Fatalf("mute hold should not re-resolve; resolver calls = %d", rig.resolver.calls)
+	}
+}
+
+func TestPauseHoldModePausesAndRestartsAnalyzer(t *testing.T) {
+	cfg := config.Default()
+	cfg.HoldMode = "pause"
+	rig := newRigWithConfig(t, cfg)
+	rig.startPlayback(t)
+	rig.player.resetCalls()
+	rig.analyzer.mu.Lock()
+	rig.analyzer.stops = 0
+	rig.analyzer.mu.Unlock()
+
+	cmd := rig.detect(detect.Process{PID: 7, Name: "zoom.us", Input: true})
+	if cmd == nil {
+		t.Fatal("pause hold produced no command")
+	}
+	_ = runCommand(cmd)
+	if rig.model.state != stateSuspended || rig.model.muteHold {
+		t.Fatalf("state/muteHold = %v/%v", rig.model.state, rig.model.muteHold)
+	}
+	if !rig.player.hasCall("pause") {
+		t.Fatalf("pause mode did not pause mpv: %v", rig.player.calls)
+	}
+	rig.analyzer.mu.Lock()
+	stops := rig.analyzer.stops
+	rig.analyzer.mu.Unlock()
+	if stops != 1 {
+		t.Fatalf("analyzer stops = %d, want 1", stops)
+	}
+
+	_ = rig.detect()
+	cmd = rig.detect()
+	if cmd == nil {
+		t.Fatal("pause hold did not resume")
+	}
+	_ = runCommand(cmd)
+	if rig.model.state != statePlaying {
+		t.Fatalf("state = %v", rig.model.state)
+	}
+	if rig.resolver.calls != 1 {
+		t.Fatalf("pause hold should not re-resolve; resolver calls = %d", rig.resolver.calls)
+	}
+	rig.analyzer.mu.Lock()
+	starts := len(rig.analyzer.starts)
+	rig.analyzer.mu.Unlock()
+	if starts < 2 {
+		t.Fatalf("analyzer was not restarted after pause hold: %d starts", starts)
+	}
+}
+
+func TestMuteHoldPreservesUserMute(t *testing.T) {
+	rig := newRig(t)
+	rig.startPlayback(t)
+	_ = runCommand(rig.model.handleKey("m"))
+	if !rig.model.muted {
+		t.Fatal("manual mute failed")
+	}
+	rig.player.resetCalls()
+	_ = runCommand(rig.detect(detect.Process{PID: 8, Name: "FaceTime", Input: true}))
+	_ = rig.detect()
+	_ = runCommand(rig.detect())
+	if !rig.model.muted {
+		t.Fatal("hold changed the user's mute intent")
+	}
+	if !rig.player.Snapshot().Muted {
+		t.Fatal("resume should leave a manually muted stream muted")
 	}
 	if rig.model.state != statePlaying {
-		t.Fatalf("state after resume = %v", rig.model.state)
-	}
-	if rig.resolver.calls != 2 {
-		t.Fatalf("resolver calls = %d, want re-resolve", rig.resolver.calls)
+		t.Fatalf("state = %v", rig.model.state)
 	}
 }
 
@@ -728,5 +825,123 @@ func TestSpaceBindingAlias(t *testing.T) {
 	model.handleKey(" ")
 	if !model.muted {
 		t.Fatal("space alias did not trigger mute")
+	}
+}
+
+type fakeUpdater struct {
+	release   update.Release
+	available bool
+	checkErr  error
+	applyErr  error
+	applied   bool
+}
+
+func (f *fakeUpdater) Check(context.Context) (update.Release, bool, error) {
+	return f.release, f.available, f.checkErr
+}
+
+func (f *fakeUpdater) Apply(context.Context, update.Release) error {
+	f.applied = true
+	return f.applyErr
+}
+
+func TestUpdateBadgeDialogAndRestart(t *testing.T) {
+	cfg := config.Default()
+	updater := &fakeUpdater{
+		release:   update.Release{Tag: "v9.9.9", Version: "9.9.9"},
+		available: true,
+	}
+	model := New(cfg, Deps{Updater: updater}, Options{})
+	model.width, model.height = 120, 40
+
+	check := model.updateCheckCmd()
+	if check == nil {
+		t.Fatal("update check command missing")
+	}
+	model.Update(check())
+	if !model.updateAvailable {
+		t.Fatal("update was not recorded")
+	}
+	if !strings.Contains(plain(model.View()), "u update") {
+		t.Fatal("footer update shortcut missing")
+	}
+
+	model.handleKey("u")
+	if !model.updateDialog {
+		t.Fatal("update dialog did not open")
+	}
+	dialog := plain(model.View())
+	for _, want := range []string{"UPDATE AVAILABLE", "v9.9.9", "[y]", "[n]"} {
+		if !strings.Contains(dialog, want) {
+			t.Errorf("dialog missing %q", want)
+		}
+	}
+	model.handleKey("n")
+	if model.updateDialog {
+		t.Fatal("n did not close dialog")
+	}
+
+	model.handleKey("u")
+	apply := model.handleKey("y")
+	if apply == nil || !model.updating {
+		t.Fatal("y did not start the update")
+	}
+	model.Update(apply())
+	if !updater.applied {
+		t.Fatal("updater was not called")
+	}
+	if !model.restartRequested {
+		t.Fatal("successful update did not request restart")
+	}
+	if model.updateDialog || model.updateAvailable {
+		t.Fatal("successful update left the dialog/badge open")
+	}
+}
+
+func TestUpdateFailureStaysInDialog(t *testing.T) {
+	updater := &fakeUpdater{
+		release:   update.Release{Version: "9.9.9"},
+		available: true,
+		applyErr:  errors.New("disk full"),
+	}
+	model := New(config.Default(), Deps{Updater: updater}, Options{})
+	model.width, model.height = 100, 30
+	model.Update(updateCheckMsg{release: updater.release, available: true})
+	model.handleKey("u")
+	cmd := model.handleKey("y")
+	if cmd == nil {
+		t.Fatal("update command missing")
+	}
+	model.Update(cmd())
+	if !model.updateDialog || model.updateErr == nil {
+		t.Fatal("failure did not keep the dialog open")
+	}
+	if model.restartRequested {
+		t.Fatal("failure requested a restart")
+	}
+	if !strings.Contains(plain(model.View()), "Update failed") {
+		t.Fatal("failure text missing from dialog")
+	}
+	model.handleKey("esc")
+	if model.updateDialog {
+		t.Fatal("esc did not dismiss failed update dialog")
+	}
+}
+
+func TestNoUpdateBadge(t *testing.T) {
+	model := New(config.Default(), Deps{}, Options{Demo: true})
+	model.width, model.height = 120, 40
+	if strings.Contains(plain(model.View()), "u update") {
+		t.Fatal("update badge shown without an update")
+	}
+}
+
+func TestUpdateDialogViewSizes(t *testing.T) {
+	for _, size := range [][2]int{{120, 40}, {80, 24}, {46, 18}} {
+		model := New(config.Default(), Deps{}, Options{Demo: true})
+		model.width, model.height = size[0], size[1]
+		model.updateDialog = true
+		model.updateRelease = update.Release{Version: "9.9.9"}
+		assertFrameSize(t, model.View(), size[0], size[1])
 	}
 }

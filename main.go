@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,15 +17,17 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/media"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/player"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/ui"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/update"
 )
 
-var version = "0.2.0"
+var version = "dev"
 
 func main() {
 	var (
-		configPath = flag.String("config", "", "config file (default ~/.config/lofi-hiphopper/config.yaml)")
-		demo       = flag.Bool("demo", false, "run the visualizer with simulated audio")
-		showVer    = flag.Bool("version", false, "print version and exit")
+		configPath  = flag.String("config", "", "config file (default ~/.config/lofi-hiphopper/config.yaml)")
+		demo        = flag.Bool("demo", false, "run the visualizer with simulated audio")
+		showVer     = flag.Bool("version", false, "print version and exit")
+		printConfig = flag.Bool("print-config", false, "print the built-in YAML config and exit")
 	)
 	flag.Parse()
 
@@ -32,12 +35,16 @@ func main() {
 		fmt.Println("lofi-hiphopper " + version)
 		return
 	}
+	if *printConfig {
+		fmt.Print(config.DefaultYAML())
+		return
+	}
 
 	path := *configPath
 	if strings.TrimSpace(path) == "" {
 		path = config.Path()
 	}
-	cfg, created, err := config.LoadOrCreate(path)
+	cfg, err := config.Load(path)
 	if err != nil {
 		fatal(err)
 	}
@@ -53,6 +60,7 @@ func main() {
 		analyzer      ui.Analyzer
 		resolver      ui.Resolver
 		probe         ui.Probe
+		updater       ui.Updater
 		cleanup       = func() {}
 	)
 	if !*demo {
@@ -65,6 +73,9 @@ func main() {
 		resolver = media.NewResolver()
 		probe = detect.New()
 		playerService = mpv
+		if update.IsReleaseVersion(version) {
+			updater = update.New(version)
+		}
 		analyzer = fft
 		cleanup = func() {
 			fft.Close()
@@ -78,16 +89,27 @@ func main() {
 		Analyzer: analyzer,
 		Resolver: resolver,
 		Probe:    probe,
+		Updater:  updater,
 	}, ui.Options{
-		Demo:          *demo,
-		ConfigPath:    path,
-		CreatedConfig: created,
+		Demo:       *demo,
+		ConfigPath: path,
 	})
 
 	program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithFPS(60), tea.WithMouseCellMotion())
-	if _, err := program.Run(); err != nil {
+	finalModel, err := program.Run()
+	if err != nil {
 		cleanup()
 		fatal(err)
+	}
+	if restarter, ok := finalModel.(interface{ RestartRequested() bool }); ok && restarter.RestartRequested() {
+		cleanup()
+		executable, execErr := os.Executable()
+		if execErr != nil {
+			fatal(execErr)
+		}
+		if execErr := syscall.Exec(executable, os.Args, os.Environ()); execErr != nil {
+			fatal(fmt.Errorf("restart after update: %w", execErr))
+		}
 	}
 }
 

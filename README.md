@@ -19,7 +19,11 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 - Yields to Spotify, YouTube, a call, or any other app using audio.
 - Holds immediately when Zoom, Meet, FaceTime, Teams, or another app opens the
   microphone.
+- Mutes and keeps the stream running while holding, so return is seamless.
+  Pause mode is available in the config for people who prefer it.
 - Comes back after the call or other audio ends.
+- Checks GitHub releases on launch. When a newer release exists, `u` appears
+  in the footer; `u` opens an update dialog and can install and restart.
 - Ignores its own player, so it never pauses itself.
 - Keeps filling silence for as long as the TUI is open.
 - Lets you mute, change volume, pick a radio, or change visualizers from the
@@ -45,7 +49,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.2.0
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.0
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -64,8 +68,17 @@ Or run it directly:
 go run .
 ```
 
-The first launch creates `~/.config/lofi-hiphopper/config.yaml` and starts
-filling silence. Use `-demo` to try the UI without any audio:
+No config file is required. The built-in defaults are embedded in the binary,
+so the first launch simply starts filling silence. To customize, create the
+file yourself:
+
+```sh
+mkdir -p ~/.config/lofi-hiphopper
+lofi-hiphopper -print-config > ~/.config/lofi-hiphopper/config.yaml
+```
+
+Then edit only the parts you want; everything else stays at its default. Use
+`-demo` to try the UI without any audio:
 
 ```sh
 go run . -demo
@@ -86,6 +99,7 @@ Releases live at
 | `a` | Toggle auto-fill |
 | `r` | Retry / restart the selected radio |
 | `?` | Full shortcut sheet |
+| `u` | Update to a newer release, when available |
 | `q` / `ctrl+c` | Quit |
 
 Mouse gestures work too:
@@ -96,8 +110,8 @@ Mouse gestures work too:
 | Shift + wheel | Radio |
 | Ctrl + wheel | Visualizer |
 
-Every binding, including the mouse gestures, is editable in the config file.
-Press `?` to see the live table.
+Every binding, including the mouse gestures, is editable in the optional config
+file. Press `?` to see the live table.
 
 ![the shortcut sheet](docs/images/shortcuts.png)
 
@@ -121,14 +135,22 @@ Switch with `h` / `l` or the mouse. The current names are:
 
 ## Configuration
 
-The config is a normal YAML file. Every section is optional: omitted values use
-the built-in defaults. A radio list replaces the default list. Shortcut entries
-merge by action, so you can change one key without rewriting the whole table.
+The config is an optional YAML file. If it does not exist, the app uses the
+built-in defaults and creates nothing. If it exists, every section is optional:
+omitted values use the built-in defaults. A radio list replaces the default
+list. Shortcut entries merge by action, so you can change one key without
+rewriting the whole table.
 
 A small config can be just this:
 
 ```yaml
 volume: 25
+```
+
+The default yield behavior is:
+
+```yaml
+hold_mode: mute
 ```
 
 A radio and shortcut example:
@@ -158,7 +180,9 @@ When the window is narrow, the UI still works:
 
 It uses macOS CoreAudio process flags to see which apps are producing output or
 using a microphone. A separate silent ffmpeg decode feeds the visualizers, while
-mpv handles playback. It never records your microphone.
+mpv handles playback. While yielding it mutes mpv by default and unmutes when
+silence returns; set `hold_mode: pause` to pause the stream instead. It never
+records your microphone.
 
 For the deep version, read:
 
