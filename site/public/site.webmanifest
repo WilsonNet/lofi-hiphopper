@@ -1,0 +1,18 @@
+{
+  "name": "lofi-hiphopper",
+  "short_name": "lofi hiphopper",
+  "description": "A macOS terminal companion that fills silence with lofi.",
+  "start_url": "/lofi-hiphopper/",
+  "scope": "/lofi-hiphopper/",
+  "display": "standalone",
+  "background_color": "#07070e",
+  "theme_color": "#07070e",
+  "icons": [
+    {
+      "src": "/lofi-hiphopper/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

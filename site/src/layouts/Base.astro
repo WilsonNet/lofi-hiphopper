@@ -1,0 +1,66 @@
+---
+import "../styles/global.css";
+
+const title = "lofi-hiphopper — lofi that fills Mac silence";
+const description = "A macOS terminal companion that fills silence with Lofi Girl, yields to calls and other audio, and draws six live spectrum visualizers. Free and open source.";
+const canonical = "https://wilsonnet.github.io/lofi-hiphopper/";
+const ogImage = "https://wilsonnet.github.io/lofi-hiphopper/assets/og.png";
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "lofi-hiphopper",
+  description,
+  operatingSystem: "macOS 14.4 or newer",
+  applicationCategory: "MultimediaApplication",
+  softwareVersion: "0.3.2",
+  url: canonical,
+  downloadUrl: "https://github.com/WilsonNet/lofi-hiphopper/releases/latest",
+  codeRepository: "https://github.com/WilsonNet/lofi-hiphopper",
+  screenshot: "https://wilsonnet.github.io/lofi-hiphopper/assets/hero-bars.png",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  featureList: [
+    "Fills Mac silence with Lofi Girl",
+    "Yields to calls and other audio",
+    "Six live spectrum visualizers",
+    "Editable keyboard and mouse shortcuts",
+    "App bypass list",
+    "Tag-driven self-updates"
+  ]
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#07070e" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="lofi-hiphopper" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The lofi-hiphopper terminal interface with a live spectrum visualizer." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(schema)}></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <slot />
+  </body>
+</html>

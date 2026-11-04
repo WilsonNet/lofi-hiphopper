@@ -172,6 +172,23 @@ Run the docs checker after adding or moving images:
 .agents/skills/documentation/scripts/check-docs
 ```
 
+## Website check
+
+```bash
+cd site
+npm ci
+npm run build
+npm run check
+```
+
+Then load the built site in a browser at desktop and mobile widths. Verify:
+- no console errors or horizontal overflow;
+- title, description, canonical, OG image, JSON-LD, sitemap, and robots;
+- all six preview modes switch with `h` / `l`;
+- the shortcut dialog opens with `?`;
+- copy buttons show feedback;
+- the layout matches the TUI at 390px and 1200px widths.
+
 ## Release check
 
 The release workflow runs the installer against the freshly built local release

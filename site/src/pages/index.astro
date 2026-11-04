@@ -1,0 +1,284 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base>
+<div class="scanlines" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="lofi-hiphopper home">
+      <span class="brand-dot" aria-hidden="true">◉</span>
+      <span class="brand-name">lofi hiphopper</span>
+    </a>
+    <nav aria-label="Primary">
+      <a href="#features">features</a>
+      <a href="#preview">preview</a>
+      <a href="#install">install</a>
+      <a href="#faq">faq</a>
+      <a class="nav-github" href="https://github.com/WilsonNet/lofi-hiphopper">github ↗</a>
+    </nav>
+    <span class="header-meta">v0.3.2 · macOS</span>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> silence → sound</p>
+        <h1 id="hero-title">Fill silence with lofi.<br><span class="gradient-text">Not with noise.</span></h1>
+        <p class="lede">A macOS terminal companion that plays Lofi Girl when your Mac is quiet, gets out of the way for calls and other audio, and draws six live spectrum visualizers.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#install">Install</a>
+          <a class="button" href="https://github.com/WilsonNet/lofi-hiphopper/releases/latest">Download release <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-note">Free · open source · no config required · macOS 14.4+</p>
+        <div class="install-mini" role="group" aria-label="Install command">
+          <code>curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash</code>
+          <button class="copy-button" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash" aria-label="Copy install command">copy</button>
+        </div>
+      </div>
+
+      <div class="hero-demo">
+        <div class="terminal" id="terminal" tabindex="0" aria-label="Animated lofi-hiphopper terminal preview. Press h or l to change the visualizer.">
+          <div class="terminal-bar">
+            <span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="terminal-title">lofi-hiphopper — 120×40</span>
+            <span class="terminal-badge">DEMO</span>
+          </div>
+          <div class="terminal-screen">
+            <div class="term-head">
+              <span class="term-logo"><span class="status-dot" aria-hidden="true"></span> lofi hiphopper</span>
+              <span class="term-notice">silence → sound</span>
+              <span class="term-head-right"><span>AUTO-FILL ON</span><span class="pulse-dot" aria-hidden="true">●</span> FILLING</span>
+            </div>
+            <div class="term-rule" aria-hidden="true"></div>
+            <div class="term-grid">
+              <div class="term-left">
+                <section class="panel radio-panel" aria-label="Radio list preview">
+                  <span class="panel-title">RADIO</span>
+                  <span class="panel-hint">j/k · enter</span>
+                  <ul class="radio-list">
+                    <li class="selected"><span class="radio-marker">▸</span><span class="radio-dot playing">●</span> lofi hip hop radio</li>
+                    <li><span class="radio-marker"></span><span class="radio-dot">○</span> live now</li>
+                    <li><span class="radio-marker"></span><span class="radio-dot">○</span> synthwave radio</li>
+                    <li><span class="radio-marker"></span><span class="radio-dot">○</span> chillhop</li>
+                  </ul>
+                </section>
+                <section class="panel signal-panel" aria-label="Signal status preview">
+                  <span class="panel-title">SIGNAL</span>
+                  <dl>
+                    <dt>audio</dt><dd>silence</dd>
+                    <dt>spectrum</dt><dd class="ok">live</dd>
+                    <dt>player</dt><dd>mpv · 55%</dd>
+                    <dt>auto-fill</dt><dd>on</dd>
+                  </dl>
+                </section>
+              </div>
+
+              <section class="panel viz-panel" aria-label="Spectrum visualizer preview">
+                <span class="panel-title">VISUALIZER</span>
+                <span class="viz-meta"><span id="peak-label">peak 98 Hz</span> <span id="mode-label">BARS · 1/6</span> <span class="nowrap">h/l</span></span>
+                <div class="viz-wrap">
+                  <canvas id="visualizer" width="720" height="330" aria-hidden="true"></canvas>
+                  <div class="viz-axis" aria-hidden="true"><span>63</span><span>125</span><span>250</span><span>500</span><span>1k</span><span>2k</span><span>4k</span><span>8k</span><span>16k</span></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="term-now">
+              <span class="now-label">NOW PLAYING</span>
+              <strong>Lofi Girl · lofi hip hop radio</strong>
+              <span class="now-sub">lofi hip hop radio 📚 beats to relax/study to</span>
+              <span class="now-status"><span class="live-dot" aria-hidden="true"></span> LIVE <span class="now-volume">vol 55%</span></span>
+            </div>
+
+            <div class="term-status">
+              <span><span class="status-dot" aria-hidden="true"></span> SILENCE · filling with lofi</span>
+              <span>AUTO-FILL ON</span>
+            </div>
+            <div class="term-keys" aria-hidden="true">
+              <span><kbd>m</kbd> mute</span><span><kbd>-</kbd>/<kbd>=</kbd> volume</span><span><kbd>j</kbd>/<kbd>k</kbd> select</span><span><kbd>enter</kbd> play</span><span><kbd>h</kbd>/<kbd>l</kbd> visualizer</span><span><kbd>?</kbd> help</span><span><kbd>q</kbd> quit</span>
+            </div>
+          </div>
+        </div>
+        <p class="demo-caption">Click the terminal, then try <kbd>h</kbd> / <kbd>l</kbd> to switch visualizers. <span class="dim">Decorative live preview.</span></p>
+      </div>
+    </section>
+
+    <section id="features" class="section" aria-labelledby="features-title">
+      <div class="section-head">
+        <p class="section-kicker">01 · behavior</p>
+        <h2 id="features-title">Plays when quiet. Yields when it matters.</h2>
+        <p>No mixing, no talking over your meeting. lofi-hiphopper watches macOS audio activity and fills only the silence.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">◉</span>
+          <h3>Fills silence automatically</h3>
+          <p>When no app is producing audio, it starts the selected radio. When sound returns, it stops or mutes based on your hold mode.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">☎</span>
+          <h3>Call-aware</h3>
+          <p>Any app that opens the microphone counts as a call. Zoom, Meet, FaceTime, Teams: playback holds immediately.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">▥</span>
+          <h3>Six live visualizers</h3>
+          <p>Bars, mirror, scope, halo, aurora, and matrix. Real FFT data, smooth attack and release, falling peak caps, and a frequency ruler.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">⚙</span>
+          <h3>Editable everything</h3>
+          <p>Keyboard bindings and mouse gestures live in one YAML table. Wheel volume, shift-wheel radio, ctrl-wheel visualizer.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">⤫</span>
+          <h3>Bypass noisy tools</h3>
+          <p>Simulators and helper apps can keep an audio stream open. Add them to <code>bypass_apps</code> so they never interrupt lofi.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">↑</span>
+          <h3>Updates by release</h3>
+          <p>Release builds check GitHub on launch. A newer version appears as <kbd>u</kbd> in the footer; install and restart from the TUI.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="preview" class="section preview-section" aria-labelledby="preview-title">
+      <div class="section-head">
+        <p class="section-kicker">02 · screens</p>
+        <h2 id="preview-title">A terminal that feels alive.</h2>
+        <p>Truecolor panels, gradient spectrum bars, braille line work, and a compact layout that still fits a small window.</p>
+      </div>
+      <div class="screens">
+        <figure class="screen-card">
+          <img src="assets/visualizers.png" alt="Six lofi-hiphopper visualizers: bars, mirror, scope, halo, aurora, and matrix." loading="lazy" width="1800" height="865">
+          <figcaption>Six visualizers, one radio list, real spectrum data.</figcaption>
+        </figure>
+        <figure class="screen-card">
+          <img src="assets/shortcuts.png" alt="The lofi-hiphopper shortcut sheet open over the terminal." loading="lazy" width="1800" height="1293">
+          <figcaption>Press <kbd>?</kbd> for the live shortcut sheet. Every binding is editable.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="install" class="section install-section" aria-labelledby="install-title">
+      <div class="install-copy">
+        <p class="section-kicker">03 · install</p>
+        <h2 id="install-title">One command, then it listens.</h2>
+        <p>macOS 14.4 or newer. Install the runtime dependencies with Homebrew, then run the installer. It downloads the latest release, verifies its checksum, and puts the binary in <code>~/.local/bin</code>.</p>
+        <pre class="code-block" aria-label="Install commands"><code><span class="code-comment"># runtime dependencies</span>
+brew install mpv yt-dlp ffmpeg
+
+<span class="code-comment"># latest release</span>
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+
+<span class="code-comment"># start filling silence</span>
+lofi-hiphopper</code><button class="copy-button" type="button" data-copy="brew install mpv yt-dlp ffmpeg
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+lofi-hiphopper" aria-label="Copy install commands">copy</button></pre>
+        <p class="small-note">No config file is created. Defaults live inside the binary. To customize, run <code>lofi-hiphopper -print-config</code> and redirect it wherever you like.</p>
+      </div>
+      <div class="install-side">
+        <section class="panel config-panel" aria-labelledby="config-title">
+          <h3 class="panel-title" id="config-title">config.yaml</h3>
+          <pre><code><span class="code-comment"># optional overrides; everything else stays default</span>
+volume: 35
+hold_mode: stop      <span class="code-comment"># stop | pause | mute</span>
+
+bypass_apps:
+  - "CoreSimulator"
+  - "com.example.MyApp"
+
+shortcuts:
+  - action: mute
+    keys: ["m"]
+  - action: next_radio
+    keys: ["j", "shift+wheel_down"]</code></pre>
+        </section>
+        <p class="small-note">Read the <a href="https://github.com/WilsonNet/lofi-hiphopper/blob/main/docs/configuration.md">configuration reference ↗</a> or build <a href="https://github.com/WilsonNet/lofi-hiphopper">from source ↗</a>.</p>
+      </div>
+    </section>
+
+    <section id="faq" class="section faq-section" aria-labelledby="faq-title">
+      <div class="section-head">
+        <p class="section-kicker">04 · questions</p>
+        <h2 id="faq-title">Good questions.</h2>
+      </div>
+      <div class="faq-list">
+        <details>
+          <summary>Does it work on Linux?</summary>
+          <p>Not yet. This release is macOS-only because detection uses the CoreAudio per-process API. Linux support is planned for a future release.</p>
+        </details>
+        <details>
+          <summary>Does it record my microphone?</summary>
+          <p>No. It reads CoreAudio process flags to see whether an app has an active input or output stream. The only audio it decodes is the radio stream, silently, to draw the spectrum.</p>
+        </details>
+        <details>
+          <summary>What happens during a Zoom or Meet call?</summary>
+          <p>Any app with an active microphone stream holds playback immediately. With the default <code>hold_mode: stop</code>, the stream stops and re-resolves when the call ends. <code>pause</code> and <code>mute</code> are opt-in alternatives.</p>
+        </details>
+        <details>
+          <summary>Why does it say “waiting for silence”?</summary>
+          <p>Another app is producing audio. Check the footer for the app name. If the audio is not important, add the app to <code>bypass_apps</code> in your optional config.</p>
+        </details>
+        <details>
+          <summary>Why does it need mpv, yt-dlp, and ffmpeg?</summary>
+          <p>mpv handles playback, yt-dlp resolves YouTube and channel live URLs, and ffmpeg produces the silent audio analysis for the visualizers. Playback continues if the analyser fails.</p>
+        </details>
+        <details>
+          <summary>Is it free?</summary>
+          <p>Yes. The code, releases, installer, and visualizers are free and open source. There is no account, telemetry, or paywall.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section final-cta" aria-labelledby="cta-title">
+      <div>
+        <p class="section-kicker">05 · run it</p>
+        <h2 id="cta-title">Let the quiet sound better.</h2>
+        <p>Install the latest release, or star the repository and build from source.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="button primary" href="https://github.com/WilsonNet/lofi-hiphopper/releases/latest">Download latest <span aria-hidden="true">↗</span></a>
+        <a class="button" href="https://github.com/WilsonNet/lofi-hiphopper">View on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <span class="brand-dot" aria-hidden="true">◉</span>
+      <span>lofi-hiphopper · built with <a href="https://charm.sh">Charm</a> Bubble Tea</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/WilsonNet/lofi-hiphopper">GitHub</a>
+      <a href="https://github.com/WilsonNet/lofi-hiphopper/releases">Releases</a>
+      <a href="https://github.com/WilsonNet/lofi-hiphopper/blob/main/README.md">README</a>
+      <span>© <span id="year">2026</span></span>
+    </div>
+  </footer>
+
+  <div class="copy-toast" id="copy-toast" role="status" aria-live="polite"></div>
+
+  <dialog class="shortcut-dialog" id="shortcut-dialog" aria-labelledby="shortcut-title">
+    <div class="dialog-head">
+      <h2 id="shortcut-title">SHORTCUTS</h2>
+      <button class="dialog-close" type="button" aria-label="Close shortcuts">×</button>
+    </div>
+    <dl>
+      <dt>j / k</dt><dd>select radio</dd>
+      <dt>enter</dt><dd>play selection</dd>
+      <dt>h / l</dt><dd>visualizer</dd>
+      <dt>m</dt><dd>mute</dd>
+      <dt>- / =</dt><dd>volume</dd>
+      <dt>a</dt><dd>auto-fill</dd>
+      <dt>?</dt><dd>shortcuts</dd>
+      <dt>q</dt><dd>quit</dd>
+    </dl>
+    <p class="dialog-note">Mouse wheel: volume · shift+wheel: radio · ctrl+wheel: visualizer</p>
+  </dialog>
+
+  <script>
+    import "../scripts/app.js";
+  </script>
+</Base>

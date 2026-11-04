@@ -3,6 +3,8 @@
 A tiny macOS terminal companion that fills silence with lofi, then gets out of
 the way when you are on a call or already listening to something.
 
+[Website](https://wilsonnet.github.io/lofi-hiphopper/) · [Releases](https://github.com/WilsonNet/lofi-hiphopper/releases)
+
 ![lofi hiphopper playing the BARS visualizer](docs/images/hero-bars.png)
 
 *Screenshots use demo mode so they can be captured without playing audio. The

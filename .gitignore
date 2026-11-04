@@ -5,3 +5,8 @@
 
 # Local Playwright MCP traces
 .playwright-mcp/
+
+# Astro site
+site/node_modules/
+site/dist/
+site/.astro/

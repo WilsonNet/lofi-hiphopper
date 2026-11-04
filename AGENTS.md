@@ -115,6 +115,22 @@ output; a screenshot alone is not evidence of state.
 The `.agents/skills/` layout is intentionally tool-agnostic. Keep reusable
 workflows there; keep project-specific commands in this file.
 
+## Website
+
+The marketing site is an Astro app in `site/`. It deploys to GitHub Pages.
+
+```bash
+cd site
+npm ci
+npm run build
+npm run check
+```
+
+Keep the terminal aesthetic aligned with the TUI. Test the built site in a
+browser at desktop and mobile widths. Check console errors, links, keyboard
+visualizer switching, the shortcut dialog, and copy buttons. Update the site
+version and release links when cutting a release.
+
 ## Documentation
 
 - `README.md` is for humans: short, visual, quick start, keys, and links.
