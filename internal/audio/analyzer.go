@@ -213,7 +213,7 @@ func (a *Analyzer) run(ctx context.Context, gen int, frames chan Frame, uri stri
 
 		rms := rootMeanSquare(hop)
 		bands := BandsFromSamples(ring, SampleRate, BandCount)
-		downsampleWave(ring[FFTSize-1024:], wave)
+		downsampleWave(ring[FFTSize-512:], wave)
 		frame := Frame{
 			Bands: bands,
 			Wave:  append([]float64(nil), wave...),

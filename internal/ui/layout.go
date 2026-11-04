@@ -18,12 +18,13 @@ func (m *Model) View() string {
 	canvas := NewCanvas(m.width, m.height, Background)
 	if m.width < 46 || m.height < 18 {
 		m.drawTiny(canvas)
-		return canvas.Render()
-	}
-	if m.width >= 92 && m.height >= 24 {
+	} else if m.width >= 92 && m.height >= 24 {
 		m.drawWide(canvas)
 	} else {
 		m.drawCompact(canvas)
+	}
+	if m.helpOpen {
+		m.drawHelp(canvas)
 	}
 	return canvas.Render()
 }
@@ -606,25 +607,50 @@ func (m *Model) drawFooter(canvas *Canvas, x, width, statusY, keysY int) {
 		drawRightText(canvas, x+width, statusY, shortAuto, Style{FG: Muted, BG: Background, Bold: m.autofill})
 	}
 
+	muteKey := m.hintKey("mute")
+	volumeKey := m.hintKey("volume_down") + " / " + m.hintKey("volume_up")
+	radioKey := m.hintKey("next_radio") + " / " + m.hintKey("previous_radio")
+	playKey := m.hintKey("play")
+	visualizerKey := m.hintKey("previous_visualizer") + " / " + m.hintKey("next_visualizer")
+	autoKey := m.hintKey("toggle_autofill")
+	retryKey := m.hintKey("retry")
+	helpKey := m.hintKey("help")
+	quitKey := m.hintKey("quit")
+
 	if width >= 108 {
 		m.drawHints(canvas, x, keysY, width, []keyHint{
-			{"m", "mute"}, {"- / =", "volume"}, {"j / k", "select"}, {"enter", "play"},
-			{"h / l", "visualizer"}, {"a", "auto-fill"}, {"r", "retry"}, {"q", "quit"},
+			{muteKey, "mute"}, {volumeKey, "volume"}, {radioKey, "select"}, {playKey, "play"},
+			{visualizerKey, "visualizer"}, {autoKey, "auto-fill"}, {retryKey, "retry"}, {helpKey, "help"}, {quitKey, "quit"},
 		})
 	} else if width >= 78 {
 		m.drawHints(canvas, x, keysY, width, []keyHint{
-			{"m", "mute"}, {"-/+", "vol"}, {"j/k", "select"}, {"enter", "play"},
-			{"h/l", "style"}, {"a", "auto"}, {"q", "quit"},
+			{muteKey, "mute"}, {volumeKey, "vol"}, {radioKey, "select"}, {playKey, "play"},
+			{visualizerKey, "style"}, {autoKey, "auto"}, {helpKey, "help"}, {quitKey, "quit"},
 		})
 	} else if width >= 56 {
 		m.drawHints(canvas, x, keysY, width, []keyHint{
-			{"m", "mute"}, {"-/+", "vol"}, {"j/k", ""}, {"enter", ""}, {"h/l", ""}, {"q", "quit"},
+			{muteKey, "mute"}, {volumeKey, "vol"}, {radioKey, ""}, {playKey, ""}, {visualizerKey, ""}, {helpKey, ""}, {quitKey, "quit"},
 		})
 	} else {
+		compact := func(value string) string { return strings.ReplaceAll(value, " / ", "/") }
 		m.drawHints(canvas, x, keysY, width, []keyHint{
-			{"m", "mute"}, {"-/+", "vol"}, {"j/k", ""}, {"enter", ""}, {"h/l", ""}, {"q", ""},
+			{muteKey, ""}, {compact(volumeKey), ""}, {compact(radioKey), ""},
+			{playKey, ""}, {compact(visualizerKey), ""}, {helpKey, ""}, {quitKey, ""},
 		})
 	}
+}
+
+func (m *Model) hintKey(action string) string {
+	keys := m.keysFor(action)
+	for _, key := range keys {
+		if key != " " && !strings.Contains(key, "wheel") {
+			return prettyKey(key)
+		}
+	}
+	if len(keys) > 0 {
+		return prettyKey(keys[0])
+	}
+	return "—"
 }
 
 type keyHint struct {
@@ -637,7 +663,10 @@ func (m *Model) drawHints(canvas *Canvas, x, y, width int, hints []keyHint) {
 	for index, hint := range hints {
 		keyWidth := len([]rune(hint.key))
 		labelWidth := len([]rune(hint.label))
-		needed := keyWidth + 1 + labelWidth
+		needed := keyWidth + labelWidth
+		if labelWidth > 0 {
+			needed++
+		}
 		if index > 0 {
 			needed += 3
 		}
@@ -649,9 +678,12 @@ func (m *Model) drawHints(canvas *Canvas, x, y, width int, hints []keyHint) {
 			cursor += 3
 		}
 		canvas.Text(cursor, y, hint.key, Style{FG: Accent, BG: Background, Bold: true})
-		cursor += keyWidth + 1
-		canvas.Text(cursor, y, hint.label, Style{FG: Dim, BG: Background})
-		cursor += labelWidth
+		cursor += keyWidth
+		if labelWidth > 0 {
+			cursor++
+			canvas.Text(cursor, y, hint.label, Style{FG: Dim, BG: Background})
+			cursor += labelWidth
+		}
 	}
 }
 

@@ -18,7 +18,7 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/ui"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func main() {
 	var (
@@ -84,7 +84,7 @@ func main() {
 		CreatedConfig: created,
 	})
 
-	program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithFPS(60))
+	program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithFPS(60), tea.WithMouseCellMotion())
 	if _, err := program.Run(); err != nil {
 		cleanup()
 		fatal(err)

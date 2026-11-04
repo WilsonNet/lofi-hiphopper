@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# Small, project-agnostic helper for real tests in a Herdr workspace.
+set -euo pipefail
+
+usage() {
+	cat <<'EOF'
+usage: herdr-tab <command> [args]
+
+commands:
+  create <label> [cwd]        create an isolated tab, print tab_id and pane_id
+  run <pane> <command...>     type a command and Enter into the pane
+  keys <pane> <key...>        send named keys (enter, esc, ctrl+c, ...)
+  wait <pane> <text> [ms]     wait for literal pane output
+  read <pane> [lines]         read recent-unwrapped text (default 120 lines)
+  close <tab>                 close a tab you created
+  smoke                       create a tab, prove output, close it
+
+The helper refuses to run outside Herdr. It only manages IDs returned by
+`create`; never close a tab you did not create.
+EOF
+}
+
+require_herdr() {
+	if [ "${HERDR_ENV:-}" != "1" ]; then
+		echo "herdr-tab: must run inside a Herdr pane (HERDR_ENV=1)" >&2
+		exit 2
+	fi
+	if [ -z "${HERDR_WORKSPACE_ID:-}" ]; then
+		echo "herdr-tab: HERDR_WORKSPACE_ID is not set" >&2
+		exit 2
+	fi
+	command -v herdr >/dev/null 2>&1 || {
+		echo "herdr-tab: herdr is not in PATH" >&2
+		exit 2
+	}
+	command -v python3 >/dev/null 2>&1 || {
+		echo "herdr-tab: python3 is required to parse herdr JSON" >&2
+		exit 2
+	}
+}
+
+cmd_create() {
+	local label="${1:-test-$(date +%s)}"
+	local cwd="${2:-$PWD}"
+	local response tab pane
+	response="$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$cwd" --label "$label" --no-focus)"
+	tab="$(printf '%s' "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["tab"]["tab_id"])')"
+	pane="$(printf '%s' "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])')"
+	printf 'tab_id=%s\npane_id=%s\n' "$tab" "$pane"
+}
+
+cmd_run() {
+	local pane="${1:?pane id required}"
+	shift
+	[ "$#" -gt 0 ] || {
+		echo "herdr-tab: command is required" >&2
+		exit 2
+	}
+	herdr pane run "$pane" "$*"
+}
+
+cmd_keys() {
+	local pane="${1:?pane id required}"
+	shift
+	[ "$#" -gt 0 ] || {
+		echo "herdr-tab: at least one key is required" >&2
+		exit 2
+	}
+	herdr pane send-keys "$pane" "$@"
+}
+
+cmd_wait() {
+	local pane="${1:?pane id required}"
+	local text="${2:?text is required}"
+	local timeout="${3:-30000}"
+	herdr pane wait-output "$pane" --match "$text" --timeout "$timeout" --source recent-unwrapped
+}
+
+cmd_read() {
+	local pane="${1:?pane id required}"
+	local lines="${2:-120}"
+	herdr pane read "$pane" --source recent-unwrapped --format text --lines "$lines"
+}
+
+cmd_close() {
+	local tab="${1:?tab id required}"
+	herdr tab close "$tab"
+}
+
+cmd_smoke() {
+	local ids tab pane output
+	ids="$(cmd_create "herdr-skill-smoke-$$" "$PWD")"
+	tab="$(printf '%s\n' "$ids" | sed -n 's/^tab_id=//p')"
+	pane="$(printf '%s\n' "$ids" | sed -n 's/^pane_id=//p')"
+	trap "herdr tab close '$tab' >/dev/null 2>&1 || true" EXIT
+	cmd_run "$pane" "printf 'herdr-skill-ok\\n'"
+	cmd_wait "$pane" "herdr-skill-ok" 10000 >/dev/null
+	output="$(cmd_read "$pane" 20)"
+	case "$output" in
+	*herdr-skill-ok*)
+		printf 'herdr-tab smoke: PASS (tab %s, pane %s)\n' "$tab" "$pane"
+		;;
+	*)
+		printf 'herdr-tab smoke: FAIL\n%s\n' "$output" >&2
+		exit 1
+		;;
+	esac
+}
+
+main() {
+	local command="${1:-}"
+	[ -n "$command" ] || {
+		usage
+		exit 2
+	}
+	require_herdr
+	shift
+	case "$command" in
+	create) cmd_create "$@" ;;
+	run) cmd_run "$@" ;;
+	keys) cmd_keys "$@" ;;
+	wait) cmd_wait "$@" ;;
+	read) cmd_read "$@" ;;
+	close) cmd_close "$@" ;;
+	smoke) cmd_smoke "$@" ;;
+	help | -h | --help) usage ;;
+	*)
+		usage >&2
+		exit 2
+		;;
+	esac
+}
+
+main "$@"

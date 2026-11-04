@@ -379,8 +379,8 @@ func TestVisualizerAndSelectionKeys(t *testing.T) {
 		t.Fatalf("mode = %d", rig.model.viz.Mode)
 	}
 	rig.model.handleKey("4")
-	if rig.model.viz.Mode != ModeHalo {
-		t.Fatalf("mode = %d", rig.model.viz.Mode)
+	if rig.model.viz.Mode != ModeBars {
+		t.Fatalf("numeric key should be unbound, mode = %d", rig.model.viz.Mode)
 	}
 	rig.model.handleKey("j")
 	if rig.model.selected != 1 {
@@ -589,5 +589,144 @@ func TestManualPlayWorksWhenDetectionFails(t *testing.T) {
 	}
 	if rig.model.state != statePlaying {
 		t.Fatalf("state = %v", rig.model.state)
+	}
+}
+
+func TestMouseWheelShortcuts(t *testing.T) {
+	rig := newRig(t)
+	rig.startPlayback(t)
+
+	beforeVolume := rig.model.volume
+	_, cmd := rig.model.Update(tea.MouseMsg{Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress})
+	if cmd != nil {
+		_ = runCommand(cmd)
+	}
+	if rig.model.volume != beforeVolume+5 {
+		t.Fatalf("wheel up volume = %d, want %d", rig.model.volume, beforeVolume+5)
+	}
+	if rig.player.Snapshot().Volume != beforeVolume+5 {
+		t.Fatalf("mpv volume = %d", rig.player.Snapshot().Volume)
+	}
+
+	beforeSelected := rig.model.selected
+	rig.model.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Shift: true, Action: tea.MouseActionPress})
+	if rig.model.selected != (beforeSelected+1)%len(rig.model.radios) {
+		t.Fatalf("shift+wheel selected = %d", rig.model.selected)
+	}
+
+	beforeMode := rig.model.viz.Mode
+	rig.model.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Ctrl: true, Action: tea.MouseActionPress})
+	if rig.model.viz.Mode != (beforeMode+1)%VisualizerCount {
+		t.Fatalf("ctrl+wheel mode = %d", rig.model.viz.Mode)
+	}
+}
+
+func TestPlainWheelDoesNotChangeRadioOrVisualizer(t *testing.T) {
+	rig := newRig(t)
+	selected, mode := rig.model.selected, rig.model.viz.Mode
+	rig.model.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress})
+	if rig.model.selected != selected || rig.model.viz.Mode != mode {
+		t.Fatal("plain wheel changed an unrelated control")
+	}
+}
+
+func TestHelpOverlay(t *testing.T) {
+	cfg := config.Default()
+	model := New(cfg, Deps{}, Options{Demo: true})
+	model.width, model.height = 120, 40
+	model.handleKey("?")
+	if !model.helpOpen {
+		t.Fatal("? did not open help")
+	}
+	view := plain(model.View())
+	for _, want := range []string{"SHORTCUTS", "PLAYBACK", "volume up", "wheel ↑", "edit bindings", "config.yaml"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("help missing %q", want)
+		}
+	}
+	assertFrameSize(t, model.View(), 120, 40)
+	model.handleKey("?")
+	if model.helpOpen {
+		t.Fatal("? did not close help")
+	}
+	model.handleKey("?")
+	model.handleKey("esc")
+	if model.helpOpen {
+		t.Fatal("esc did not close help")
+	}
+}
+
+func TestHelpRespectsCustomBindings(t *testing.T) {
+	cfg := config.Default()
+	for index := range cfg.Shortcuts {
+		switch cfg.Shortcuts[index].Action {
+		case "mute":
+			cfg.Shortcuts[index].Keys = []string{"x"}
+		case "help":
+			cfg.Shortcuts[index].Keys = []string{"f1"}
+		}
+	}
+	model := New(cfg, Deps{}, Options{Demo: true})
+	model.width, model.height = 100, 30
+	model.handleKey("?")
+	if model.helpOpen {
+		t.Fatal("? opened help despite custom help binding")
+	}
+	model.handleKey("f1")
+	if !model.helpOpen {
+		t.Fatal("custom help binding did not open help")
+	}
+	if !strings.Contains(plain(model.View()), "x") {
+		t.Fatal("custom mute binding absent from help")
+	}
+	model.handleKey("esc")
+	model.handleKey("m")
+	if model.muted {
+		t.Fatal("old mute binding still active")
+	}
+	model.handleKey("x")
+	if !model.muted {
+		t.Fatal("custom mute binding inactive")
+	}
+	footer := plain(model.View())
+	if !strings.Contains(footer, "x mute") {
+		t.Fatalf("footer did not adapt to custom mute binding:\n%s", footer)
+	}
+	if !strings.Contains(footer, "f1 help") {
+		t.Fatalf("footer did not adapt to custom help binding:\n%s", footer)
+	}
+}
+
+func TestVolumeStepFromConfig(t *testing.T) {
+	cfg := config.Default()
+	cfg.VolumeStep = 11
+	model := New(cfg, Deps{}, Options{Demo: true})
+	model.handleKey("=")
+	if model.volume != cfg.Volume+11 {
+		t.Fatalf("volume = %d, want %d", model.volume, cfg.Volume+11)
+	}
+}
+
+func TestHelpViewAcrossSizes(t *testing.T) {
+	cfg := config.Default()
+	for _, size := range [][2]int{{140, 45}, {120, 40}, {100, 30}, {92, 24}, {60, 20}, {46, 18}, {30, 10}} {
+		model := New(cfg, Deps{}, Options{Demo: true})
+		model.width, model.height = size[0], size[1]
+		model.helpOpen = true
+		assertFrameSize(t, model.View(), size[0], size[1])
+	}
+}
+
+func TestSpaceBindingAlias(t *testing.T) {
+	cfg := config.Default()
+	for index := range cfg.Shortcuts {
+		if cfg.Shortcuts[index].Action == "mute" {
+			cfg.Shortcuts[index].Keys = []string{"space"}
+		}
+	}
+	model := New(cfg, Deps{}, Options{Demo: true})
+	model.handleKey(" ")
+	if !model.muted {
+		t.Fatal("space alias did not trigger mute")
 	}
 }

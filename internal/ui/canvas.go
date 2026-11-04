@@ -209,6 +209,19 @@ func (c *Canvas) Panel(x, y, width, height int, title, right string, style Panel
 	return x + 2, y + 1, width - 4, height - 2
 }
 
+// Dim darkens every cell in place, used behind modal panels.
+func (c *Canvas) Dim(factor float64) {
+	if c == nil {
+		return
+	}
+	factor = math.Max(0, math.Min(1, factor))
+	for index := range c.cells {
+		cell := &c.cells[index]
+		cell.FG = shade(cell.FG, factor)
+		cell.BG = shade(cell.BG, factor)
+	}
+}
+
 // HLine draws a horizontal rule.
 func (c *Canvas) HLine(x, y, width int, color RGB) {
 	for column := x; column < x+width; column++ {

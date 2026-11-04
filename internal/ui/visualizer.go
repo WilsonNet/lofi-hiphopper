@@ -327,11 +327,11 @@ func (v *Visualizer) drawScope(canvas *Canvas, x, y, width, height int, now floa
 	}
 
 	// Previous frame, dim and ghostly.
-	drawWaveLine(b, v.PrevWave, pixelW, center, height, now, func(t float64) RGB {
+	drawWaveLine(b, smoothCurve(v.PrevWave, 3), pixelW, center, height, now, func(t float64) RGB {
 		return blend(PanelBG, Blue, 0.28)
 	})
 	// Current frame, glowing.
-	drawWaveLine(b, v.Wave, pixelW, center, height, now, func(t float64) RGB {
+	drawWaveLine(b, smoothCurve(v.Wave, 3), pixelW, center, height, now, func(t float64) RGB {
 		return warmGradient(t)
 	})
 
@@ -357,7 +357,7 @@ func drawWaveLine(b *Braille, wave []float64, pixelW, center, height int, now fl
 	for px := 0; px < pixelW; px++ {
 		index := px * len(wave) / pixelW
 		value := wave[index]
-		amplitude := value * 2.6
+		amplitude := value * 2.15
 		amplitude = math.Max(-1, math.Min(1, amplitude))
 		py := center - int(amplitude*float64(height*4)*0.42)
 		py = max(2, min(b.H-3, py))
@@ -405,27 +405,33 @@ func (v *Visualizer) drawHalo(canvas *Canvas, x, y, width, height int, now float
 		y0 := cy + int(math.Sin(angle)*inner)
 		x1 := cx + int(math.Cos(angle)*length)
 		y1 := cy + int(math.Sin(angle)*length)
-		color := warmGradient(float64(i) / float64(rays-1))
+		color := lerp(warmGradient(float64(i)/float64(rays-1)), Cream, 0.12)
 		b.Line(x0, y0, x1, y1, color)
+		if length-inner > 3 {
+			b.Line(x0, y0+1, x1, y1+1, lerp(color, Cream, 0.18))
+		}
 		if value > 0.03 {
-			b.Set(x1, y1, pulseColor(Cream, now*2+float64(i), 0.35))
-			b.Set(x1+1, y1, pulseColor(color, now*2+float64(i), 0.2))
+			for tip := 0; tip < 2; tip++ {
+				b.Set(x1+tip, y1, pulseColor(Cream, now*2+float64(i), 0.4))
+				b.Set(x1, y1+tip, pulseColor(color, now*2+float64(i), 0.25))
+			}
 		}
 	}
 
 	coreRadius := int(inner*0.55 + float64(bass)*inner*0.35)
-	coreColor := blend(PanelBG, Magenta, 0.35+bass*0.3)
+	coreColor := blend(PanelBG, Magenta, 0.5+bass*0.3)
 	for py := cy - coreRadius; py <= cy+coreRadius; py += 2 {
 		for px := cx - coreRadius; px <= cx+coreRadius; px += 2 {
 			dx := float64(px - cx)
 			dy := float64(py - cy)
 			distance := math.Hypot(dx, dy)
 			if distance <= float64(coreRadius) {
-				alpha := 0.25 + 0.45*(1-distance/float64(max(1, coreRadius)))
-				b.Set(px, py, blend(PanelBG, blendToward(coreColor, Cream, 0.3), alpha))
+				alpha := 0.38 + 0.5*(1-distance/float64(max(1, coreRadius)))
+				b.Set(px, py, blend(PanelBG, blendToward(coreColor, Cream, 0.35), alpha))
 			}
 		}
 	}
+	drawCircle(b, cx, cy, coreRadius+2, blend(PanelBG, Accent, 0.7))
 
 	orbit := now * 0.55
 	if !options.Playing {
@@ -443,11 +449,11 @@ func (v *Visualizer) drawAurora(canvas *Canvas, x, y, width, height int, now flo
 		return
 	}
 	// Starfield.
-	starColors := []RGB{blend(PanelBG, Dim, 0.8), blend(PanelBG, Muted, 0.55), blend(PanelBG, Accent, 0.35)}
+	starColors := []RGB{blend(PanelBG, Muted, 0.8), blend(PanelBG, Accent, 0.5), blend(PanelBG, Cream, 0.25)}
 	for py := 0; py < height; py++ {
 		for px := 0; px < width; px++ {
 			hash := uint32(px*73856093) ^ uint32(py*19349663) ^ 0x9e3779b9
-			if hash%61 != 0 {
+			if hash%47 != 0 {
 				continue
 			}
 			star := starColors[hash%uint32(len(starColors))]
@@ -467,16 +473,16 @@ func (v *Visualizer) drawAurora(canvas *Canvas, x, y, width, height int, now flo
 
 	for i := 0; i < width; i++ {
 		waveOffset := 0.035 * math.Sin(float64(i)*0.17+now*0.8)
-		value := clamp01(0.04 + 0.82*math.Sqrt(back[i]) + waveOffset)
+		value := clamp01(0.05 + 0.90*math.Sqrt(back[i]) + waveOffset)
 		if value <= 0.01 {
 			continue
 		}
-		top := y + height - 1 - int(value*float64(height-1)*0.78)
+		top := y + height - 1 - int(value*float64(height-1)*0.90)
 		for py := top; py < y+height; py++ {
 			heightT := float64(py-y) / float64(max(1, height-1))
 			color := auroraGradient(0.15 + 0.65*float64(i)/float64(max(1, width-1)) + 0.2*heightT)
-			alpha := 0.60 - 0.34*heightT
-			canvas.Blend(x+i, py, '░', color, alpha)
+			alpha := 0.78 - 0.38*heightT
+			canvas.Blend(x+i, py, '█', color, alpha)
 		}
 		topColor := auroraGradient(0.2 + 0.7*float64(i)/float64(max(1, width-1)))
 		canvas.Set(x+i, top, '▔', lerp(topColor, Cream, 0.35))
@@ -484,16 +490,16 @@ func (v *Visualizer) drawAurora(canvas *Canvas, x, y, width, height int, now flo
 
 	for i := 0; i < width; i++ {
 		waveOffset := 0.055 * math.Sin(float64(i)*0.11-now*0.55)
-		value := clamp01(0.03 + 0.74*math.Sqrt(front[i]) + waveOffset)
+		value := clamp01(0.03 + 0.82*math.Sqrt(front[i]) + waveOffset)
 		if value <= 0.01 {
 			continue
 		}
-		top := y + height - 1 - int(value*float64(height-1)*0.66)
+		top := y + height - 1 - int(value*float64(height-1)*0.78)
 		for py := top; py < y+height; py++ {
 			heightT := float64(py-y) / float64(max(1, height-1))
 			color := auroraGradient(0.55 + 0.35*float64(i)/float64(max(1, width-1)))
-			alpha := 0.55 - 0.30*heightT
-			canvas.Blend(x+i, py, '▒', color, alpha)
+			alpha := 0.68 - 0.32*heightT
+			canvas.Blend(x+i, py, '▓', color, alpha)
 		}
 		canvas.Set(x+i, top, '▔', lerp(Peach, Cream, 0.4))
 	}

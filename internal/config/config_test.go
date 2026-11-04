@@ -3,9 +3,12 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestDefaultIsValid(t *testing.T) {
@@ -162,5 +165,163 @@ func TestPathPrecedence(t *testing.T) {
 	got := Path()
 	if !strings.HasSuffix(got, filepath.Join(".config", appDir, "config.yaml")) {
 		t.Fatalf("home path = %q", got)
+	}
+}
+
+func TestDefaultShortcutsAndVolumeStep(t *testing.T) {
+	cfg := Default()
+	if cfg.VolumeStep != DefaultVolumeStep {
+		t.Fatalf("volume step = %d", cfg.VolumeStep)
+	}
+	if len(cfg.Shortcuts) != len(ShortcutActions()) {
+		t.Fatalf("shortcuts = %d, want %d", len(cfg.Shortcuts), len(ShortcutActions()))
+	}
+	seen := map[string]string{}
+	for _, shortcut := range cfg.Shortcuts {
+		if ShortcutLabel(shortcut.Action) == "" {
+			t.Errorf("action %q has no label", shortcut.Action)
+		}
+		for _, key := range shortcut.Keys {
+			if previous, ok := seen[key]; ok {
+				t.Errorf("key %q bound to %s and %s", key, previous, shortcut.Action)
+			}
+			seen[key] = shortcut.Action
+		}
+	}
+	for _, want := range []string{"wheel_up", "wheel_down", "shift+wheel_down", "ctrl+wheel_down", "?"} {
+		if _, ok := seen[want]; !ok {
+			t.Errorf("default binding %q missing", want)
+		}
+	}
+}
+
+func TestPartialConfigKeepsDefaults(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `volume: 30
+autofill: false
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := LoadOrCreate(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Volume != 30 || cfg.Autofill {
+		t.Fatalf("specified overrides not applied: %+v", cfg)
+	}
+	if cfg.VolumeStep != DefaultVolumeStep {
+		t.Errorf("volume_step = %d, want default", cfg.VolumeStep)
+	}
+	if cfg.Poll() != DefaultPollInterval {
+		t.Errorf("poll = %s, want default", cfg.Poll())
+	}
+	if len(cfg.Radios) != len(DefaultRadios()) {
+		t.Errorf("radios = %d, want defaults", len(cfg.Radios))
+	}
+	if len(cfg.Shortcuts) != len(DefaultShortcuts()) {
+		t.Errorf("shortcuts = %d, want defaults", len(cfg.Shortcuts))
+	}
+}
+
+func TestRadiosReplaceDefaults(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `radios:
+  - name: Only station
+    url: https://example.com/only
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := LoadOrCreate(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Radios) != 1 || cfg.Radios[0].Name != "Only station" {
+		t.Fatalf("radios = %+v", cfg.Radios)
+	}
+	if len(cfg.Shortcuts) != len(DefaultShortcuts()) {
+		t.Errorf("shortcuts should keep defaults")
+	}
+}
+
+func TestShortcutMerge(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `shortcuts:
+  - action: mute
+    keys: ["x"]
+  - action: quit
+    keys: ["ctrl+c", "Q"]
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _, err := LoadOrCreate(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byAction := map[string][]string{}
+	for _, shortcut := range cfg.Shortcuts {
+		byAction[shortcut.Action] = shortcut.Keys
+	}
+	if got := byAction["mute"]; len(got) != 1 || got[0] != "x" {
+		t.Fatalf("mute = %v", got)
+	}
+	if got := byAction["quit"]; len(got) != 2 || got[1] != "Q" {
+		t.Fatalf("quit = %v", got)
+	}
+	if got := byAction["help"]; len(got) != 1 || got[0] != "?" {
+		t.Fatalf("help defaults lost: %v", got)
+	}
+}
+
+func TestShortcutValidation(t *testing.T) {
+	base := Default()
+	tests := []struct {
+		name      string
+		shortcuts []Shortcut
+		want      string
+	}{
+		{"unknown action", []Shortcut{{Action: "explode", Keys: []string{"x"}}}, "unknown"},
+		{"empty action", []Shortcut{{Keys: []string{"x"}}}, "action is empty"},
+		{"empty keys", []Shortcut{{Action: "mute"}}, "must not be empty"},
+		{"blank key", []Shortcut{{Action: "mute", Keys: []string{" "}}}, "is empty"},
+		{"duplicate action", []Shortcut{{Action: "mute", Keys: []string{"x"}}, {Action: "mute", Keys: []string{"y"}}}, "duplicates"},
+		{"conflicting key", []Shortcut{{Action: "mute", Keys: []string{"j"}}}, "bound to both"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := base
+			cfg.Shortcuts = tt.shortcuts
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("Validate() = %v, want %q", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestVolumeStepValidation(t *testing.T) {
+	cfg := Default()
+	cfg.VolumeStep = 0
+	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "volume_step") {
+		t.Fatalf("Validate() = %v", err)
+	}
+	cfg.VolumeStep = 26
+	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "volume_step") {
+		t.Fatalf("Validate() = %v", err)
+	}
+}
+
+func TestDefaultYAMLMatchesDefaults(t *testing.T) {
+	got := Default()
+	if err := yaml.Unmarshal([]byte(defaultYAML), &got); err != nil {
+		t.Fatalf("parse default YAML: %v", err)
+	}
+	if err := got.Validate(); err != nil {
+		t.Fatalf("validate default YAML: %v", err)
+	}
+	if !reflect.DeepEqual(got, Default()) {
+		t.Fatalf("default YAML drifted from Default():\ngot  %+v\nwant %+v", got, Default())
 	}
 }

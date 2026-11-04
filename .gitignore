@@ -2,3 +2,6 @@
 /lofi-hiphopper
 *.log
 .DS_Store
+
+# Local Playwright MCP traces
+.playwright-mcp/

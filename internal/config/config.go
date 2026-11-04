@@ -16,6 +16,8 @@ import (
 const (
 	// DefaultVolume is a friendly starting level: audible, not shouty.
 	DefaultVolume = 55
+	// DefaultVolumeStep is one wheel notch or volume key press.
+	DefaultVolumeStep = 5
 	// DefaultPollInterval is how often the audio activity probe runs.
 	DefaultPollInterval = time.Second
 	appDir              = "lofi-hiphopper"
@@ -55,12 +57,84 @@ type Radio struct {
 	URL  string `yaml:"url"`
 }
 
-// Config is the complete user configuration.
+// Shortcut binds one or more key or mouse tokens to an action.
+type Shortcut struct {
+	Action string   `yaml:"action"`
+	Keys   []string `yaml:"keys"`
+}
+
+// Config is the complete user configuration. Every field has a built-in
+// default; a user config only needs to contain the parts it wants to change.
 type Config struct {
-	Volume       int      `yaml:"volume"`
-	PollInterval Duration `yaml:"poll_interval"`
-	Autofill     bool     `yaml:"autofill"`
-	Radios       []Radio  `yaml:"radios"`
+	Volume       int        `yaml:"volume"`
+	VolumeStep   int        `yaml:"volume_step"`
+	PollInterval Duration   `yaml:"poll_interval"`
+	Autofill     bool       `yaml:"autofill"`
+	Radios       []Radio    `yaml:"radios"`
+	Shortcuts    []Shortcut `yaml:"shortcuts"`
+}
+
+// shortcutOrder is the canonical display and merge order.
+var shortcutOrder = []string{
+	"play",
+	"next_radio",
+	"previous_radio",
+	"next_visualizer",
+	"previous_visualizer",
+	"volume_up",
+	"volume_down",
+	"mute",
+	"toggle_autofill",
+	"retry",
+	"help",
+	"quit",
+}
+
+var shortcutLabels = map[string]string{
+	"play":                "play selection",
+	"next_radio":          "next radio",
+	"previous_radio":      "previous radio",
+	"next_visualizer":     "next visualizer",
+	"previous_visualizer": "previous visualizer",
+	"volume_up":           "volume up",
+	"volume_down":         "volume down",
+	"mute":                "mute",
+	"toggle_autofill":     "auto-fill",
+	"retry":               "retry stream",
+	"help":                "shortcut list",
+	"quit":                "quit",
+}
+
+// DefaultShortcuts includes keyboard and mouse gestures. A terminal reports
+// wheel events with modifiers, so the same binding table covers both.
+func DefaultShortcuts() []Shortcut {
+	return []Shortcut{
+		{Action: "play", Keys: []string{"enter"}},
+		{Action: "next_radio", Keys: []string{"j", "down", "shift+wheel_down"}},
+		{Action: "previous_radio", Keys: []string{"k", "up", "shift+wheel_up"}},
+		{Action: "next_visualizer", Keys: []string{"l", "right", "ctrl+wheel_down"}},
+		{Action: "previous_visualizer", Keys: []string{"h", "left", "ctrl+wheel_up"}},
+		{Action: "volume_up", Keys: []string{"=", "+", "wheel_up"}},
+		{Action: "volume_down", Keys: []string{"-", "_", "wheel_down"}},
+		{Action: "mute", Keys: []string{"m"}},
+		{Action: "toggle_autofill", Keys: []string{"a"}},
+		{Action: "retry", Keys: []string{"r"}},
+		{Action: "help", Keys: []string{"?"}},
+		{Action: "quit", Keys: []string{"q", "ctrl+c"}},
+	}
+}
+
+// ShortcutActions returns the canonical action order.
+func ShortcutActions() []string {
+	return append([]string(nil), shortcutOrder...)
+}
+
+// ShortcutLabel returns a human-readable action label.
+func ShortcutLabel(action string) string {
+	if label, ok := shortcutLabels[action]; ok {
+		return label
+	}
+	return action
 }
 
 // DefaultRadios points at Lofi Girl's evergreen streams first, then a few
@@ -94,16 +168,21 @@ func DefaultRadios() []Radio {
 func Default() Config {
 	return Config{
 		Volume:       DefaultVolume,
+		VolumeStep:   DefaultVolumeStep,
 		PollInterval: Duration(DefaultPollInterval),
 		Autofill:     true,
 		Radios:       DefaultRadios(),
+		Shortcuts:    DefaultShortcuts(),
 	}
 }
 
 const defaultYAML = `# lofi-hiphopper · fills Mac silence with lofi.
-# Add any YouTube video, live stream, or direct audio URL.
-# The first radio is the default silence filler.
+# POSIX config path: ${XDG_CONFIG_HOME:-$HOME/.config}/lofi-hiphopper/config.yaml
+#
+# Every section is optional. Omitted values use built-in defaults; specified
+# values override only that part. The first radio fills silence.
 volume: 55
+volume_step: 5
 poll_interval: 1s
 autofill: true
 
@@ -118,6 +197,34 @@ radios:
     url: https://www.youtube.com/watch?v=5yx6BWlEVcY
   - name: Relaxing jazz piano radio
     url: https://www.youtube.com/watch?v=Dx5qFachd3A
+
+# Shortcuts are editable exactly like the radio list. Missing actions keep
+# their built-in keys. Mouse gestures are bindings too.
+shortcuts:
+  - action: play
+    keys: ["enter"]
+  - action: next_radio
+    keys: ["j", "down", "shift+wheel_down"]
+  - action: previous_radio
+    keys: ["k", "up", "shift+wheel_up"]
+  - action: next_visualizer
+    keys: ["l", "right", "ctrl+wheel_down"]
+  - action: previous_visualizer
+    keys: ["h", "left", "ctrl+wheel_up"]
+  - action: volume_up
+    keys: ["=", "+", "wheel_up"]
+  - action: volume_down
+    keys: ["-", "_", "wheel_down"]
+  - action: mute
+    keys: ["m"]
+  - action: toggle_autofill
+    keys: ["a"]
+  - action: retry
+    keys: ["r"]
+  - action: help
+    keys: ["?"]
+  - action: quit
+    keys: ["q", "ctrl+c"]
 `
 
 // Path resolves the config location. LOFI_CONFIG wins, then XDG_CONFIG_HOME,
@@ -187,6 +294,9 @@ func (c *Config) Validate() error {
 	if c.Volume < 0 || c.Volume > 100 {
 		return fmt.Errorf("volume must be between 0 and 100 (got %d)", c.Volume)
 	}
+	if c.VolumeStep < 1 || c.VolumeStep > 25 {
+		return fmt.Errorf("volume_step must be between 1 and 25 (got %d)", c.VolumeStep)
+	}
 	interval := time.Duration(c.PollInterval)
 	if interval < 250*time.Millisecond || interval > 30*time.Second {
 		return fmt.Errorf("poll_interval must be between 250ms and 30s (got %s)", interval)
@@ -196,6 +306,12 @@ func (c *Config) Validate() error {
 	}
 
 	seen := make(map[string]int, len(c.Radios))
+	shortcuts, err := normalizeShortcuts(c.Shortcuts)
+	if err != nil {
+		return err
+	}
+	c.Shortcuts = shortcuts
+
 	for i := range c.Radios {
 		radio := &c.Radios[i]
 		radio.Name = strings.TrimSpace(radio.Name)
@@ -230,4 +346,68 @@ func (c Config) Poll() time.Duration {
 		return DefaultPollInterval
 	}
 	return time.Duration(c.PollInterval)
+}
+
+// normalizeShortcuts keeps built-in bindings for actions the user did not
+// mention, while letting a listed action replace its defaults completely.
+func normalizeShortcuts(user []Shortcut) ([]Shortcut, error) {
+	defaults := DefaultShortcuts()
+	known := make(map[string]struct{}, len(defaults))
+	byAction := make(map[string]Shortcut, len(defaults))
+	for _, shortcut := range defaults {
+		known[shortcut.Action] = struct{}{}
+		byAction[shortcut.Action] = shortcut
+	}
+
+	seenActions := make(map[string]int, len(user))
+	for index, shortcut := range user {
+		action := strings.TrimSpace(shortcut.Action)
+		if action == "" {
+			return nil, fmt.Errorf("shortcuts[%d].action is empty", index)
+		}
+		if _, ok := known[action]; !ok {
+			return nil, fmt.Errorf("shortcuts[%d].action %q is unknown", index, action)
+		}
+		if previous, ok := seenActions[action]; ok {
+			return nil, fmt.Errorf("shortcuts[%d] duplicates shortcuts[%d] (%s)", index, previous, action)
+		}
+		seenActions[action] = index
+		keys := make([]string, 0, len(shortcut.Keys))
+		for keyIndex, key := range shortcut.Keys {
+			key = strings.TrimSpace(key)
+			if key == "" {
+				return nil, fmt.Errorf("shortcuts[%d].keys[%d] is empty", index, keyIndex)
+			}
+			keys = append(keys, key)
+		}
+		if len(keys) == 0 {
+			return nil, fmt.Errorf("shortcuts[%d].keys must not be empty", index)
+		}
+		byAction[action] = Shortcut{Action: action, Keys: keys}
+	}
+
+	seenKeys := make(map[string]string, len(shortcutOrder)*3)
+	result := make([]Shortcut, 0, len(shortcutOrder))
+	for _, action := range shortcutOrder {
+		shortcut := byAction[action]
+		deduped := make([]string, 0, len(shortcut.Keys))
+		for _, key := range shortcut.Keys {
+			if previous, ok := seenKeys[key]; ok && previous != action {
+				return nil, fmt.Errorf("key %q is bound to both %s and %s", key, previous, action)
+			}
+			seenKeys[key] = action
+			duplicate := false
+			for _, existing := range deduped {
+				if existing == key {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				deduped = append(deduped, key)
+			}
+		}
+		result = append(result, Shortcut{Action: action, Keys: deduped})
+	}
+	return result, nil
 }

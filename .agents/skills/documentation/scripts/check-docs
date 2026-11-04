@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Check local Markdown links and image paths without external dependencies."""
+from __future__ import annotations
+
+import os
+import re
+import sys
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+ROOT = Path(__file__).resolve().parents[4]
+SKIP_DIRS = {".git", ".build", "bin", "node_modules", ".venv", "venv"}
+LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+
+
+def markdown_files() -> list[Path]:
+    files: list[Path] = []
+    for directory, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        for filename in sorted(filenames):
+            if filename.endswith(".md"):
+                files.append(Path(directory) / filename)
+    return files
+
+
+def target_path(raw: str) -> str | None:
+    raw = raw.strip()
+    if raw.startswith("<") and raw.endswith(">"):
+        raw = raw[1:-1]
+    raw = raw.split(" ", 1)[0]
+    parsed = urlparse(raw)
+    if parsed.scheme in {"http", "https", "mailto", "tel", "data"}:
+        return None
+    if not raw or raw.startswith("#"):
+        return None
+    if raw.startswith("/"):
+        return None
+    return unquote(raw.split("#", 1)[0].split("?", 1)[0])
+
+
+def main() -> int:
+    failures: list[str] = []
+    checked = 0
+    for source in markdown_files():
+        in_fence = False
+        for number, line in enumerate(source.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith("```"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            for match in LINK.finditer(line):
+                target = target_path(match.group(1))
+                if target is None:
+                    continue
+                checked += 1
+                destination = (source.parent / target).resolve()
+                try:
+                    destination.relative_to(ROOT)
+                except ValueError:
+                    failures.append(f"{source.relative_to(ROOT)}:{number}: outside repo: {target}")
+                    continue
+                if not destination.exists():
+                    failures.append(f"{source.relative_to(ROOT)}:{number}: missing {target}")
+                elif destination.is_file() and destination.stat().st_size == 0:
+                    failures.append(f"{source.relative_to(ROOT)}:{number}: empty file {target}")
+
+    if failures:
+        print("docs check: FAIL", file=sys.stderr)
+        for failure in failures:
+            print("  " + failure, file=sys.stderr)
+        return 1
+    print(f"docs check: PASS ({checked} local links/images)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

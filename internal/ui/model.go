@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -84,16 +85,21 @@ const (
 
 const (
 	animationInterval = 33 * time.Millisecond
-	volumeStep        = 5
 	minRetry          = 3 * time.Second
 	maxRetry          = 30 * time.Second
 )
 
 // Model is the Bubble Tea model.
 type Model struct {
-	cfg  config.Config
-	deps Deps
-	demo bool
+	cfg        config.Config
+	deps       Deps
+	demo       bool
+	configPath string
+
+	volumeStep int
+	shortcuts  []config.Shortcut
+	bindings   map[string]string
+	helpOpen   bool
 
 	width  int
 	height int
@@ -167,6 +173,30 @@ func New(cfg config.Config, deps Deps, options Options) *Model {
 		now:          time.Now(),
 		tracker:      detect.NewTracker(),
 		retryBackoff: minRetry,
+	}
+	if options.ConfigPath == "" {
+		m.configPath = config.Path()
+	} else {
+		m.configPath = options.ConfigPath
+	}
+	m.volumeStep = cfg.VolumeStep
+	if m.volumeStep < 1 {
+		m.volumeStep = config.DefaultVolumeStep
+	}
+	shortcuts := cfg.Shortcuts
+	if len(shortcuts) == 0 {
+		shortcuts = config.DefaultShortcuts()
+	}
+	m.shortcuts = append([]config.Shortcut(nil), shortcuts...)
+	m.bindings = make(map[string]string)
+	for _, shortcut := range m.shortcuts {
+		for _, key := range shortcut.Keys {
+			bindingKey := key
+			if bindingKey == "space" {
+				bindingKey = " "
+			}
+			m.bindings[bindingKey] = shortcut.Action
+		}
 	}
 	if m.demo {
 		m.state = statePlaying
@@ -259,7 +289,6 @@ type (
 		stream media.Stream
 		err    error
 	}
-	windowSizeMsg struct{ width, height int }
 )
 
 // Update implements tea.Model.
@@ -270,6 +299,8 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		return m, m.handleKey(message.String())
+	case tea.MouseMsg:
+		return m, m.handleMouse(message)
 	case animationTickMsg:
 		m.now = time.Now()
 		m.tick++
@@ -314,44 +345,82 @@ func (m *Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleKey(key string) tea.Cmd {
-	switch key {
-	case "ctrl+c", "q":
-		m.cancelTune()
-		if m.deps.Analyzer != nil {
-			m.deps.Analyzer.Stop()
+	if key == "ctrl+c" {
+		return m.quit()
+	}
+	if m.helpOpen {
+		if key == "esc" {
+			m.helpOpen = false
+			return nil
 		}
-		return tea.Quit
-	case "m":
+		action, ok := m.bindings[key]
+		if !ok {
+			return nil
+		}
+		switch action {
+		case "help":
+			m.helpOpen = false
+		case "quit":
+			return m.quit()
+		}
+		return nil
+	}
+	action, ok := m.bindings[key]
+	if !ok {
+		return nil
+	}
+	return m.performAction(action)
+}
+
+func (m *Model) handleMouse(event tea.MouseMsg) tea.Cmd {
+	mouse := tea.MouseEvent(event)
+	if m.helpOpen || !mouse.IsWheel() {
+		return nil
+	}
+	token := mouseBindingToken(mouse)
+	if token == "" {
+		return nil
+	}
+	action, ok := m.bindings[token]
+	if !ok {
+		return nil
+	}
+	return m.performAction(action)
+}
+
+func (m *Model) performAction(action string) tea.Cmd {
+	switch action {
+	case "quit":
+		return m.quit()
+	case "help":
+		m.helpOpen = !m.helpOpen
+		return nil
+	case "mute":
 		m.muted = !m.muted
 		m.muteChangedAt = m.now
 		m.setNotice(map[bool]string{true: "muted", false: "sound on"}[m.muted], noticeInfo, 2*time.Second)
 		return m.setMuteCmd(m.muted)
-	case "-", "_":
-		return m.changeVolume(-volumeStep)
-	case "=", "+":
-		return m.changeVolume(volumeStep)
-	case "j", "down":
+	case "volume_up":
+		return m.changeVolume(m.volumeStep)
+	case "volume_down":
+		return m.changeVolume(-m.volumeStep)
+	case "next_radio":
 		m.moveSelection(1)
 		return nil
-	case "k", "up":
+	case "previous_radio":
 		m.moveSelection(-1)
 		return nil
-	case "enter":
+	case "play":
 		return m.requestPlay(m.selected)
-	case "h", "left":
-		m.viz.Prev()
-		m.setNotice("visualizer · "+m.viz.Name(), noticeInfo, 2*time.Second)
-		return nil
-	case "l", "right":
+	case "next_visualizer":
 		m.viz.Next()
 		m.setNotice("visualizer · "+m.viz.Name(), noticeInfo, 2*time.Second)
 		return nil
-	case "1", "2", "3", "4", "5", "6":
-		mode := int(key[0] - '1')
-		m.viz.SetMode(mode)
+	case "previous_visualizer":
+		m.viz.Prev()
 		m.setNotice("visualizer · "+m.viz.Name(), noticeInfo, 2*time.Second)
 		return nil
-	case "a":
+	case "toggle_autofill":
 		m.autofill = !m.autofill
 		if m.autofill {
 			m.setNotice("auto-fill on", noticeGood, 2*time.Second)
@@ -359,10 +428,46 @@ func (m *Model) handleKey(key string) tea.Cmd {
 			m.setNotice("auto-fill off", noticeInfo, 2*time.Second)
 		}
 		return m.sync()
-	case "r":
+	case "retry":
 		return m.restart()
 	}
 	return nil
+}
+
+func (m *Model) quit() tea.Cmd {
+	m.cancelTune()
+	if m.deps.Analyzer != nil {
+		m.deps.Analyzer.Stop()
+	}
+	return tea.Quit
+}
+
+func mouseBindingToken(event tea.MouseEvent) string {
+	button := ""
+	switch event.Button {
+	case tea.MouseButtonWheelUp:
+		button = "wheel_up"
+	case tea.MouseButtonWheelDown:
+		button = "wheel_down"
+	case tea.MouseButtonWheelLeft:
+		button = "wheel_left"
+	case tea.MouseButtonWheelRight:
+		button = "wheel_right"
+	default:
+		return ""
+	}
+	var parts []string
+	if event.Ctrl {
+		parts = append(parts, "ctrl")
+	}
+	if event.Alt {
+		parts = append(parts, "alt")
+	}
+	if event.Shift {
+		parts = append(parts, "shift")
+	}
+	parts = append(parts, button)
+	return strings.Join(parts, "+")
 }
 
 func (m *Model) moveSelection(delta int) {
@@ -886,9 +991,9 @@ func (m *Model) demoFrame() ([]float64, []float64) {
 	}
 	wave := make([]float64, audio.WaveCount)
 	for i := range wave {
-		wave[i] = 0.22*math.Sin(float64(i)*0.13+t*5.1) +
-			0.1*math.Sin(float64(i)*0.31-t*3.4) +
-			0.05*math.Sin(float64(i)*0.67+t*1.7)
+		wave[i] = 0.30*math.Sin(float64(i)*0.035+t*4.6) +
+			0.08*math.Sin(float64(i)*0.071-t*2.9+1.7) +
+			0.04*math.Sin(float64(i)*0.019+t*1.4)
 	}
 	return bands, wave
 }
