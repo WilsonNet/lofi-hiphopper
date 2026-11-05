@@ -91,8 +91,8 @@ that may drift or resume stale.
 - `docs/images/hero-bars.png`, `docs/images/visualizers.png`, and
   `docs/images/shortcuts.png` are real TUI captures made with Charm `freeze`.
 - The public repository is https://github.com/WilsonNet/lofi-hiphopper.
-- Public releases include `v0.3.2` at
-  https://github.com/WilsonNet/lofi-hiphopper/releases/tag/v0.3.2.
+- Public releases include `v0.3.3` at
+  https://github.com/WilsonNet/lofi-hiphopper/releases/tag/v0.3.3.
 - The live site is https://wilsonnet.github.io/lofi-hiphopper/.
 - `README.md`, `docs/`, and `install.sh` are the current product documentation
   and install path.

@@ -384,7 +384,7 @@
       "name": "Navigation",
       "kind": "nav",
       "description": "Mono text navigation with a pink GitHub link and optional version metadata.",
-      "html": "<nav class=\"ds-nav\"><a href=\"#\">features</a><a href=\"#\">preview</a><a href=\"#\">install</a><a href=\"#\">faq</a><a class=\"ds-nav-github\" href=\"#\">github \u2197</a><span class=\"ds-nav-meta\">v0.3.2 \u00b7 macOS</span></nav>",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">features</a><a href=\"#\">preview</a><a href=\"#\">install</a><a href=\"#\">faq</a><a class=\"ds-nav-github\" href=\"#\">github \u2197</a><span class=\"ds-nav-meta\">v0.3.3 \u00b7 macOS</span></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 22px; font-family: var(--mono); font-size: 0.82rem; } .ds-nav a { color: var(--muted); text-decoration: none; } .ds-nav a:hover { color: var(--ink); } .ds-nav .ds-nav-github { color: var(--pink); } .ds-nav-meta { padding-left: 20px; border-left: 1px solid var(--border); color: var(--dim); font-size: 0.8rem; white-space: nowrap; }"
     },
     {

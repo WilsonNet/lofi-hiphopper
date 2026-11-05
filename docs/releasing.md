@@ -11,8 +11,8 @@ GitHub release with both macOS architectures.
 3. Create and push an annotated tag:
 
 ```sh
-git tag -a v0.3.2 -m "lofi-hiphopper v0.3.2"
-git push origin v0.3.2
+git tag -a v0.3.3 -m "lofi-hiphopper v0.3.3"
+git push origin v0.3.3
 ```
 
 The `.github/workflows/release.yml` workflow then:
@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/insta
 Or pin a version:
 
 ```sh
-curl -fsSL .../install.sh | bash -s -- --version v0.3.2
+curl -fsSL .../install.sh | bash -s -- --version v0.3.3
 ```
 
 ## Test the release locally
@@ -78,7 +78,7 @@ cp install.sh /tmp/lofi-release/dist/install.sh
 (cd /tmp/lofi-release/dist && \
   shasum -a 256 *.tar.gz install.sh > checksums.txt)
 
-VERSION=v0.3.2 BASE_URL=file:///tmp/lofi-release/dist \
+VERSION=v0.3.3 BASE_URL=file:///tmp/lofi-release/dist \
   INSTALL_DIR=/tmp/lofi-install ./install.sh
 /tmp/lofi-install/lofi-hiphopper --version
 ```

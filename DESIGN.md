@@ -320,7 +320,7 @@ the fill to hot pink. It is the only filled action on the page.
 ### Navigation
 - **Top bar:** Mono 0.82rem, muted grey, 2px gaps, no underlines. The active
   section shifts to ink; the GitHub link is hot pink at rest. A hairline left
-  border separates `v0.3.2 · macOS`; it hides below 1040px.
+  border separates `v0.3.3 · macOS`; it hides below 1040px.
 - **Session rail:** A sticky 184–224px column with numbered section links,
   live status, and key hints. The active link takes a violet gradient wash.
 - **Mobile:** Below 1200px the rail hides and its links return to the top bar.
