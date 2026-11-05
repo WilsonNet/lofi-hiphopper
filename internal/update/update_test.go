@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -109,9 +110,18 @@ func TestCheckDevelopmentVersionSkipsNetwork(t *testing.T) {
 }
 
 func TestApplyReplacesExecutable(t *testing.T) {
+	for _, platform := range [][2]string{{"darwin", "arm64"}, {"linux", "amd64"}, {"linux", "arm64"}} {
+		t.Run(platform[0]+"_"+platform[1], func(t *testing.T) {
+			testApplyReplacesExecutable(t, platform[0], platform[1])
+		})
+	}
+}
+
+func testApplyReplacesExecutable(t *testing.T, goos, goarch string) {
+	name := ArchiveName(goos, goarch)
 	payload := []byte("new-binary")
 	archive := makeArchive(t, "lofi-hiphopper", payload)
-	checksums := makeChecksum("lofi-hiphopper_darwin_arm64.tar.gz", archive)
+	checksums := makeChecksum(name, archive)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/checksums.txt":
@@ -133,14 +143,15 @@ func TestApplyReplacesExecutable(t *testing.T) {
 		Version: "0.4.0",
 		Assets: []Asset{
 			{Name: "checksums.txt", URL: server.URL + "/checksums.txt"},
-			{Name: "lofi-hiphopper_darwin_arm64.tar.gz", URL: server.URL + "/archive.tar.gz"},
+			{Name: "lofi-hiphopper_darwin_x86.tar.gz", URL: server.URL + "/wrong.tar.gz"},
+			{Name: name, URL: server.URL + "/archive.tar.gz"},
 		},
 	}
 	service := &Service{
 		CurrentVersion: "0.3.0",
 		Client:         server.Client(),
-		GOOS:           "darwin",
-		GOARCH:         "arm64",
+		GOOS:           goos,
+		GOARCH:         goarch,
 		Executable:     path,
 	}
 	if err := service.Apply(context.Background(), release); err != nil {
@@ -190,6 +201,20 @@ func TestApplyChecksumMismatchLeavesOldBinary(t *testing.T) {
 	got, _ := os.ReadFile(path)
 	if string(got) != "old" {
 		t.Fatalf("old binary was modified: %q", got)
+	}
+}
+
+func TestApplyUnsupportedPlatform(t *testing.T) {
+	service := &Service{GOOS: "windows", GOARCH: "amd64", Executable: "/tmp/x"}
+	err := service.Apply(context.Background(), Release{})
+	if err == nil || !strings.Contains(err.Error(), "windows") {
+		t.Fatalf("unsupported platform error = %v", err)
+	}
+}
+
+func TestArchiveName(t *testing.T) {
+	if got := ArchiveName("linux", "amd64"); got != "lofi-hiphopper_linux_amd64.tar.gz" {
+		t.Fatalf("ArchiveName = %q", got)
 	}
 }
 

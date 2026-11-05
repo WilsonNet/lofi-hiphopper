@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/wilsonpsn/lofi-hiphopper/internal/media"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/platform"
 )
 
 // Snapshot is a cheap, race-free view of mpv for the UI.
@@ -92,7 +93,7 @@ func (m *MPV) Start(ctx context.Context) error {
 		return nil
 	}
 	if _, err := exec.LookPath(m.opts.Binary); err != nil {
-		return fmt.Errorf("mpv not found (install it with: brew install mpv)")
+		return fmt.Errorf("mpv not found (install it with: %s)", platform.InstallHint("mpv"))
 	}
 
 	m.mu.Lock()

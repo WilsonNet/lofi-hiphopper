@@ -185,7 +185,7 @@ func Default() Config {
 	}
 }
 
-const defaultYAML = `# lofi-hiphopper · fills Mac silence with lofi.
+const defaultYAML = `# lofi-hiphopper · fills silence with lofi on macOS and Linux.
 # POSIX config path: ${XDG_CONFIG_HOME:-$HOME/.config}/lofi-hiphopper/config.yaml
 #
 # Every section is optional. Omitted values use built-in defaults; specified
@@ -202,8 +202,9 @@ autofill: true
 hold_mode: stop
 
 # Apps that should never interrupt lofi. Entries match process name,
-# bundle ID, or executable path, case-insensitively.
-# Example: ["CoreSimulator", "com.apple.Music"]
+# bundle ID (Flatpak app ID on Linux), or executable path, case-insensitively.
+# macOS example: ["CoreSimulator", "com.apple.Music"]
+# Linux example: ["cava", "easyeffects"]
 bypass_apps: []
 
 radios:
@@ -250,8 +251,8 @@ shortcuts:
 `
 
 // Path resolves the config location. LOFI_CONFIG wins, then XDG_CONFIG_HOME,
-// then ~/.config. macOS CLIs feel more at home in ~/.config than Application
-// Support, so we intentionally do not use os.UserConfigDir.
+// then ~/.config on every platform. macOS CLIs feel more at home in ~/.config
+// than Application Support, so we intentionally do not use os.UserConfigDir.
 func Path() string {
 	if custom := strings.TrimSpace(os.Getenv("LOFI_CONFIG")); custom != "" {
 		return expandHome(custom)

@@ -2,13 +2,18 @@
 
 ## Requirements
 
-- macOS 14.4 or newer
+- macOS 14.4 or newer, or Linux with PipeWire (`pw-dump`) or PulseAudio
+  (`pactl`)
 - Go 1.24+
 - `mpv`, `yt-dlp`, `ffmpeg`
 
 ```bash
-brew install mpv yt-dlp ffmpeg
+brew install mpv yt-dlp ffmpeg                      # macOS
+sudo pacman -S --needed mpv yt-dlp ffmpeg pipewire  # Arch Linux
 ```
+
+macOS builds need cgo for CoreAudio. Linux builds are pure Go
+(`CGO_ENABLED=0` works) and shell out to `pw-dump` or `pactl`.
 
 ## Run
 
@@ -34,7 +39,8 @@ go run . -config /tmp/lofi.yaml
 ```
 main.go
 internal/config      YAML defaults, partial overrides, validation
-internal/detect      CoreAudio probe + debounce
+internal/detect      CoreAudio (macOS) / PipeWire + PulseAudio (Linux) probe, debounce
+internal/platform    OS-specific install hints
 internal/media       yt-dlp resolver
 internal/player      mpv JSON IPC controller
 internal/audio       ffmpeg decode + FFT
@@ -84,14 +90,15 @@ Read `docs/architecture.md` first. Preserve these invariants:
 - analyzer failure does not stop playback;
 - retries use backoff and reset on success.
 
-Test with fakes first, then with real mpv and real CoreAudio. Use a Herdr tab
-and a low-volume config.
+Test with fakes first, then with real mpv and the real platform probe
+(CoreAudio on macOS, PipeWire on Linux). Use a Herdr tab and a low-volume
+config.
 
 ## Updates
 
 The updater lives in `internal/update`. Release assets must keep the names
-`lofi-hiphopper_darwin_arm64.tar.gz`, `lofi-hiphopper_darwin_amd64.tar.gz`, and
-`checksums.txt`. The TUI exposes the update check as a command so it never
+`lofi-hiphopper_<os>_<arch>.tar.gz` (`darwin`/`linux`, `arm64`/`amd64`) and
+`checksums.txt`; `update.ArchiveName` builds the name. The TUI exposes the update check as a command so it never
 blocks input. Test checks and downloads with an `httptest` server; keep the
 restart path behind `syscall.Exec` in `main`.
 
@@ -113,7 +120,10 @@ real captured ANSI. Store in `docs/images/`.
 **Detection always says other audio**
 
 - Some other app is holding an output stream.
-- Use `go test ./internal/detect -run TestCoreAudio -v` to inspect.
+- macOS: `go test ./internal/detect -run TestCoreAudio -v` lists processes.
+- Linux: `go test ./internal/detect -run TestLinuxAudioProbe -v` lists active
+  streams; `pw-dump | grep -A3 Stream/` shows the raw nodes.
+- Add the culprit to `bypass_apps` if it should never interrupt lofi.
 - Confirm the app's own mpv is excluded by PID.
 
 **Visualizer offline**
@@ -125,7 +135,9 @@ real captured ANSI. Store in `docs/images/`.
 **YouTube errors**
 
 ```bash
-brew upgrade yt-dlp
+brew upgrade yt-dlp       # macOS
+sudo pacman -Syu yt-dlp   # Arch Linux
+pipx upgrade yt-dlp       # any distro, if installed with pipx
 ```
 
 Live video IDs change. Prefer a channel `/live` URL or update the radio list.

@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Terminal-first developers on macOS 14.4 or newer who work at a desk with a
+Terminal-first developers on macOS 14.4+ or Linux (PipeWire or PulseAudio) who work at a desk with a
 terminal open for long stretches. They want background lofi without managing a
 player, and they do not want music to talk over calls, screen sharing, videos,
 or anything else already making sound.
@@ -19,7 +19,7 @@ open-source tool from a README, a GitHub release, or a search result.
 ## Product Purpose
 
 `lofi-hiphopper` fills silence with lofi and gets out of the way when audio
-matters. It watches macOS audio activity, starts the selected radio when the
+matters. It watches system audio activity, starts the selected radio when the
 machine is quiet, and holds playback during calls or other output.
 
 Success means the user forgets it is running: music appears when the desk is
@@ -28,15 +28,16 @@ quiet, disappears during a call, and returns afterward without babysitting.
 ## Positioning
 
 A silence-aware terminal companion, not a playlist or a timer. It reads
-macOS process audio activity, excludes its own player, treats any non-own
+per-app audio activity (CoreAudio on macOS, PipeWire streams on Linux), excludes its own player, treats any non-own
 microphone input as a call, and yields before the user has to reach for pause.
 The default hold is a real stop and re-resolve on silence, not a paused stream
 that may drift or resume stale.
 
 ## Operating Context
 
-- Runs inside a macOS terminal as a Bubble Tea TUI.
-- Requires `mpv`, `yt-dlp`, and `ffmpeg`, typically installed with Homebrew.
+- Runs inside a macOS or Linux terminal as a Bubble Tea TUI.
+- Requires `mpv`, `yt-dlp`, and `ffmpeg`, installed with Homebrew on macOS or
+  the distro package manager on Linux (plus `pw-dump` or `pactl`).
 - Plays YouTube livestreams or direct audio URLs through mpv.
 - Uses an optional POSIX-style YAML config at
   `~/.config/lofi-hiphopper/config.yaml` (or `$LOFI_CONFIG` /
@@ -49,11 +50,11 @@ that may drift or resume stale.
 
 ## Capabilities and Constraints
 
-- macOS only for now. Linux support is planned but not shipped.
+- macOS 14.4+ and Linux, arm64 and amd64. The installer detects the OS.
 - Default radio is Lofi Girl's lofi hip hop livestream; the radio list is
   configurable.
-- Detection is based on CoreAudio process input/output flags, not audio
-  fingerprinting.
+- Detection is based on CoreAudio process input/output flags on macOS and
+  PipeWire/PulseAudio stream state on Linux, not audio fingerprinting.
 - Own-player exclusion is an invariant: the app's mpv process must never count
   as "other audio".
 - Calls win immediately. Any non-own input stream is treated as a call.

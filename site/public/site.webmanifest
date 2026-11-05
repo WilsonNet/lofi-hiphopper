@@ -1,7 +1,7 @@
 {
   "name": "lofi-hiphopper",
   "short_name": "lofi hiphopper",
-  "description": "A macOS terminal companion that fills silence with lofi.",
+  "description": "A macOS and Linux terminal companion that fills silence with lofi.",
   "start_url": "/lofi-hiphopper/",
   "scope": "/lofi-hiphopper/",
   "display": "standalone",

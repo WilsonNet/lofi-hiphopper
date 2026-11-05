@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/wilsonpsn/lofi-hiphopper/internal/platform"
 )
 
 const (
@@ -141,7 +143,7 @@ func (a *Analyzer) run(ctx context.Context, gen int, frames chan Frame, uri stri
 		ffmpeg = "ffmpeg"
 	}
 	if _, err := exec.LookPath(ffmpeg); err != nil {
-		a.setError(gen, errors.New("ffmpeg not found (install it with: brew install ffmpeg)"))
+		a.setError(gen, fmt.Errorf("ffmpeg not found (install it with: %s)", platform.InstallHint("ffmpeg")))
 		return
 	}
 

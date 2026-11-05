@@ -11,8 +11,8 @@ config.yaml
     │
     ▼
 ┌─────────────┐     ┌──────────────────┐
-│ CoreAudio   │     │ Bubble Tea model │◄──── keyboard / mouse
-│ process     │────►│  auto-fill       │
+│ CoreAudio / │     │ Bubble Tea model │◄──── keyboard / mouse
+│ PipeWire    │────►│  auto-fill       │
 │ probe       │     │  state machine   │
 └─────────────┘     └──────┬───────────┘
                            │ commands
@@ -39,7 +39,8 @@ that it is offline.
 | Package | Responsibility |
 | --- | --- |
 | `internal/config` | YAML defaults, partial overrides, validation, shortcut merge |
-| `internal/detect` | CoreAudio process probe, process classification, debounce |
+| `internal/detect` | CoreAudio (macOS) and PipeWire/PulseAudio (Linux) probes, classification, debounce |
+| `internal/platform` | OS-specific dependency install hints |
 | `internal/media` | yt-dlp invocation and direct URL resolution |
 | `internal/player` | mpv process lifecycle and JSON IPC |
 | `internal/audio` | ffmpeg PCM decode, FFT, bands, waveform frames |
@@ -61,6 +62,11 @@ create a config.
 
 ## Audio activity detection
 
+Each platform probe returns the same `[]detect.Process` shape, so
+classification, bypass, and debounce are shared.
+
+### macOS: CoreAudio
+
 `internal/detect/coreaudio_darwin.go` calls the macOS HAL process-object API
 through cgo. For each process it reads:
 
@@ -69,6 +75,35 @@ through cgo. For each process it reads:
 - bundle ID;
 - `kAudioProcessPropertyIsRunningInput`;
 - `kAudioProcessPropertyIsRunningOutput`.
+
+The detector needs macOS 14.4+. A non-cgo build returns a clear error.
+
+### Linux: PipeWire, then PulseAudio
+
+`internal/detect/linux.go` runs `pw-dump` once per poll (about 25ms) and
+`internal/detect/pipewire.go` parses the JSON. Each `Stream/Output/Audio` or
+`Stream/Input/Audio` node becomes one process entry:
+
+- active only while the node `state` is `running`; paused and corked streams
+  go `idle` and do not count;
+- PID comes from the node's `application.process.id`, then the owning client's
+  `application.process.id`, then the client's `pipewire.sec.pid` for native
+  PipeWire clients (pipewire-pulse clients share the server's socket PID, so
+  that fallback is skipped for them);
+- name is `application.name`, then `node.name`; bundle ID is `application.id`
+  or the Flatpak app ID; path is `/proc/<pid>/exe`, then
+  `application.process.binary`;
+- capture streams that read a sink monitor (`stream.capture.sink`,
+  `stream.monitor`, or a `.monitor` target) are desktop-audio visualizers or
+  recorders, not microphones, and are skipped.
+
+mpv uses PipeWire natively and its client reports mpv's PID, so own-player
+exclusion works unchanged. When `pw-dump` is missing, the probe runs
+`pactl -f json list sink-inputs` and `source-outputs` and treats uncorked
+streams as active. Without either tool detection reports offline and manual play
+still works. Linux builds need no cgo.
+
+### Classification
 
 `AssessWithBypass` filters out the player's own mpv PID and any process matching
 `bypass_apps` (case-insensitive substring of name, bundle ID, or executable
@@ -83,9 +118,8 @@ It applies to both output and input, so list only apps you trust to ignore.
 
 `Tracker` debounces output/silence transitions for two samples. A call is
 immediate. This is what prevents notification pings from pausing the music.
-The detector needs macOS 14.4+. A non-cgo build returns a clear error.
 
-The app never records audio. It only reads these process flags.
+The app never records audio. It only reads process flags and stream metadata.
 
 ## Playback state machine
 
@@ -126,7 +160,7 @@ reads `idle-active`, `pause`, `mute`, `volume`, `time-pos`, `duration`,
 `media-title`, and `path` into an atomic snapshot.
 
 `--audio-client-name=lofi-hiphopper` makes the app identifiable in macOS audio
-controls. The player PID is what the detector excludes.
+controls and in PipeWire tools such as `pavucontrol` or `wpctl status`. The player PID is what the detector excludes.
 
 Socket paths are kept under the platform temporary directory and checked against
 the Unix socket path limit. The child is closed with `quit`, then killed if it
@@ -192,7 +226,8 @@ with a short timeout. The UI runs this check as a Bubble Tea command at launch;
 network failures are silent and never block the TUI.
 
 When the latest semver tag is newer, the footer exposes the configured update
-key. Confirming downloads the matching `darwin/<arch>` archive and
+key. Confirming downloads the matching `<os>_<arch>` archive (for example
+`lofi-hiphopper_linux_amd64.tar.gz`) and
 `checksums.txt`, verifies SHA-256, extracts the binary, writes a temporary file
 next to the running executable, and renames it into place. The TUI then exits,
 main cleans up mpv/ffmpeg, and `syscall.Exec` replaces the process with the new
@@ -206,7 +241,7 @@ so they do not self-update.
 | yt-dlp fails | Error notice; retry with backoff if auto-fill and silence |
 | mpv exits | UI reports it; next tune restarts mpv |
 | ffmpeg fails | Playback continues; visualizer shows offline |
-| CoreAudio probe fails | Detection notice; manual play still works |
+| Audio probe fails (CoreAudio, or no `pw-dump`/`pactl`) | Detection notice; manual play still works |
 | Update check fails | Silent; the TUI works normally |
 | Update download/checksum fails | Dialog shows the error; the old binary stays intact |
 | Live stream ends | Retry/backoff while silence; reset on success |
@@ -220,7 +255,8 @@ The code avoids hidden globals so tests can inject fakes:
 - pure `detect.Assess` and `detect.Tracker`;
 - injectable analyser binary for missing-ffmpeg tests;
 - mpv integration test with `--ao=null`;
-- CoreAudio integration test;
+- CoreAudio integration test (macOS) and PipeWire probe tests (Linux), plus
+  platform-neutral `pw-dump`/`pactl` parser tests;
 - fake IPC server over `net.Pipe`.
 
 See [testing](testing.md) for the full feedback loop.

@@ -1,4 +1,4 @@
-// Package detect answers one question: is this Mac making or capturing sound?
+// Package detect answers one question: is this computer making or capturing sound?
 package detect
 
 import (
@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-// Process is one CoreAudio process object.
+// Process is one audio client: a CoreAudio process object on macOS, or a
+// PipeWire/PulseAudio stream on Linux.
 type Process struct {
 	PID      int
 	Name     string

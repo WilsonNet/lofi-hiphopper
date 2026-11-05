@@ -66,13 +66,14 @@ Integer `1`-`25`. One keyboard volume press or one wheel notch.
 
 ### `poll_interval`
 
-Duration string. How often the macOS audio process probe runs. Range:
+Duration string. How often the audio probe runs (CoreAudio on macOS,
+`pw-dump` or `pactl` on Linux). Range:
 `250ms`-`30s`. Calls are detected on the next probe; other audio needs two
 consecutive samples.
 
 ### `autofill`
 
-Boolean. When true, the first radio starts when the Mac is silent and resumes
+Boolean. When true, the first radio starts when the computer is silent and resumes
 after calls or other audio stop. When false, silence does not start playback
 automatically; calls still hold playback.
 
@@ -105,8 +106,20 @@ bypass_apps:
   - "com.apple.Music"
 ```
 
+On Linux the name is the stream's `application.name` (what `pavucontrol` or
+`wpctl status` shows), the bundle ID is the `application.id` or Flatpak app ID,
+and the path is the process executable:
+
+```yaml
+bypass_apps:
+  - "easyeffects"
+  - "com.discordapp.Discord"
+  - "/usr/bin/cava"
+```
+
 This is useful for the iOS Simulator or helper apps that keep an output stream
-open even when you cannot hear them. A bypassed app is ignored for both output
+open even when you cannot hear them. Linux capture streams that only read
+desktop audio (a sink monitor, as cava does) are already ignored. A bypassed app is ignored for both output
 and microphone activity. Leave it as `[]` to disable.
 
 ### `radios`
@@ -183,7 +196,7 @@ The app reads the config at startup. Relaunch after editing it.
 
 The release build checks the public GitHub releases endpoint on launch. When a
 newer version exists, a `u update` hint appears in the footer. Press `u`, then
-`y` to install. The updater downloads the matching macOS archive, verifies its
+`y` to install. The updater downloads the archive for your OS and CPU, verifies its
 SHA-256 checksum, replaces the executable, and restarts the app. Press `n` or
 `esc` to cancel.
 

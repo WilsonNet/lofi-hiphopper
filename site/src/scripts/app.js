@@ -476,6 +476,45 @@ function copyText(text) {
   });
 }
 
+const osTabs = [...document.querySelectorAll(".os-tab")];
+
+function selectOS(key, focus) {
+  osTabs.forEach((tab) => {
+    const selected = tab.dataset.os === key;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && focus) tab.focus();
+  });
+  document.querySelectorAll(".os-panel").forEach((panel) => {
+    panel.hidden = panel.dataset.os !== key;
+  });
+}
+
+function detectOS() {
+  const ua = navigator.userAgent || "";
+  const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  if (/android|iphone|ipad/i.test(ua)) return "macos";
+  if (/ubuntu|debian|mint/i.test(ua)) return "debian";
+  if (/fedora|red hat/i.test(ua)) return "fedora";
+  if (/linux/i.test(platform) || /linux|x11/i.test(ua)) return "arch";
+  return "macos";
+}
+
+if (osTabs.length) {
+  selectOS(detectOS(), false);
+  osTabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => selectOS(tab.dataset.os, false));
+    tab.addEventListener("keydown", (event) => {
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const next = osTabs[(index + step + osTabs.length) % osTabs.length];
+      selectOS(next.dataset.os, true);
+    });
+  });
+}
+
 document.querySelectorAll(".copy-button").forEach((button) => {
   button.addEventListener("click", () => {
     copyText(button.dataset.copy || "").then(() => {

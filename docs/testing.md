@@ -7,7 +7,7 @@ what to run and how to prove a change works.
 
 1. **Format and compile** — catch mechanical errors.
 2. **Unit tests** — exercise pure logic and component boundaries.
-3. **Integration tests** — use real mpv, ffmpeg, CoreAudio, or IPC.
+3. **Integration tests** — use real mpv, ffmpeg, CoreAudio/PipeWire, or IPC.
 4. **Real interactive test in Herdr** — drive the actual TUI and the actual
    system state.
 5. **Documentation and screenshots** — verify what a human will see.
@@ -37,7 +37,9 @@ LOFI_MPV_TEST=1 go test ./internal/player -run TestMPVIntegration -v
 This writes a generated WAV, starts real mpv with `--ao=null`, and asserts
 playing, position, volume, mute, pause, and stop. It is silent.
 
-## CoreAudio test
+## Audio detection tests
+
+macOS:
 
 ```bash
 go test ./internal/detect -run TestCoreAudio -v
@@ -45,6 +47,18 @@ go test ./internal/detect -run TestCoreAudio -v
 
 This enumerates real CoreAudio process objects. It requires macOS 14.4+ and a
 cgo build.
+
+Linux:
+
+```bash
+go test ./internal/detect -run TestLinux -v
+LOFI_MPV_TEST=1 go test ./internal/detect -run TestLinuxAudioProbeSeesMPV -v
+```
+
+The first lists active PipeWire (or PulseAudio) streams and plays nothing. The
+second starts mpv at volume 0 and asserts the probe reports its stream under
+mpv's PID, which is what own-player exclusion relies on. Parser tests for
+`pw-dump` and `pactl` JSON run on every platform.
 
 ## Real TUI test with Herdr
 
@@ -89,7 +103,8 @@ radios:
 **Yield and recovery**
 
 1. Open a YouTube video with real/headded audio (or the Playwright browser if
-   it produces a real CoreAudio stream).
+   it produces a real CoreAudio or PipeWire stream). On Linux a silent stimulus
+   works too: `mpv --no-config --volume=0 'av://lavfi:sine=d=60'`.
 2. Within a few seconds, the app pane must show `OTHER AUDIO` and `STOPPED`
    with the default `hold_mode: stop`, or `PAUSED`/`MUTED` with the other modes.
 3. In stop/pause mode, confirm the analyser stops. In mute mode, confirm mpv and
@@ -98,6 +113,15 @@ radios:
 5. Within two probes, the app must show `FILLING` again. Stop mode re-resolves;
    mute mode must not re-resolve.
 6. Stop the app and confirm no `lofi-hiphopper` mpv/ffmpeg processes remain.
+
+**Call hold**
+
+1. While `FILLING`, open a microphone stream. A real call works; on Linux a
+   silent capture is enough:
+   `pw-record --raw --volume 0 -P '{ application.name = mic-test }' - >/dev/null`.
+2. The pane must show `CALL · <app> · playback held` immediately, without
+   debounce.
+3. Stop the capture; the app must return to `FILLING`.
 
 **Shortcuts and mouse**
 
@@ -162,8 +186,9 @@ freeze -x "cat /tmp/tui.ansi" -o docs/images/example.png \
   -b "#07070e" --margin 12 --padding 12 --font.size 13
 ```
 
-If freeze fails, use Herdr to focus the test tab and capture the macOS screen
-with `screencapture`, then crop to the terminal window. Do not capture unrelated
+If freeze fails, use Herdr to focus the test tab and capture the screen
+(`screencapture` on macOS, `grim`/`spectacle` on Linux), then crop to the
+terminal window. Do not capture unrelated
 desktop content.
 
 Run the docs checker after adding or moving images:
@@ -196,7 +221,9 @@ Then load the built site in a browser at 1440px, 1920px, 1200px, and
 - the shortcut dialog opens with `?` and is labeled as app-only;
 - screenshot buttons open the full-size lightbox and Escape closes it;
 - FAQ rows open and close;
-- the install copy button copies all three command lines;
+- the install OS tabs (macOS, Arch, Debian / Ubuntu, Fedora) switch with
+  click and arrow keys, the page preselects the visitor's OS, and each copy
+  button copies that OS's three command lines;
 - every primary action says Install and points to the install section;
 - copy buttons show feedback;
 - the terminal remains readable and every action stays visible at 390px.
@@ -217,4 +244,5 @@ done until the published assets install and `--version` returns the tag version.
 ## CI
 
 `.github/workflows/test.yml` runs formatting, vet, tests, race tests, build, and
-the docs link check on macOS for pushes and pull requests.
+the docs link check on macOS and Ubuntu for pushes and pull requests. The
+Ubuntu job also checks that a `CGO_ENABLED=0` Linux build succeeds.

@@ -1,4 +1,5 @@
-// Package update checks GitHub releases and replaces the running macOS binary.
+// Package update checks GitHub releases and replaces the running binary on
+// macOS and Linux.
 package update
 
 import (
@@ -119,14 +120,18 @@ func (s *Service) Check(ctx context.Context) (Release, bool, error) {
 
 // Apply downloads, verifies, extracts, and atomically replaces this binary.
 func (s *Service) Apply(ctx context.Context, release Release) error {
-	if s.GOOS != "" && s.GOOS != "darwin" {
-		return errors.New("self-update is macOS-only for now")
+	goos := s.GOOS
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if goos != "darwin" && goos != "linux" {
+		return fmt.Errorf("self-update is not supported on %s", goos)
 	}
 	arch := s.GOARCH
 	if arch == "" {
 		arch = runtime.GOARCH
 	}
-	archiveName := fmt.Sprintf("%s_darwin_%s.tar.gz", binaryName, arch)
+	archiveName := ArchiveName(goos, arch)
 	archive, ok := release.Asset(archiveName)
 	if !ok {
 		return fmt.Errorf("release has no %s asset", archiveName)
@@ -213,6 +218,12 @@ func (s *Service) Apply(ctx context.Context, release Release) error {
 		return fmt.Errorf("replace %s: %w", executable, err)
 	}
 	return nil
+}
+
+// ArchiveName is the release archive for a platform, for example
+// lofi-hiphopper_linux_amd64.tar.gz.
+func ArchiveName(goos, goarch string) string {
+	return fmt.Sprintf("%s_%s_%s.tar.gz", binaryName, goos, goarch)
 }
 
 // Asset returns a named release asset.

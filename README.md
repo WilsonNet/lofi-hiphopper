@@ -1,7 +1,8 @@
 # lofi hiphopper
 
-A tiny macOS terminal companion that fills silence with lofi, then gets out of
-the way when you are on a call or already listening to something.
+A tiny terminal companion for macOS and Linux that fills silence with lofi,
+then gets out of the way when you are on a call or already listening to
+something.
 
 [Website](https://wilsonnet.github.io/lofi-hiphopper/) · [Releases](https://github.com/WilsonNet/lofi-hiphopper/releases)
 
@@ -10,17 +11,17 @@ the way when you are on a call or already listening to something.
 *Screenshots use demo mode so they can be captured without playing audio. The
 live app uses real system audio and real FFT data.*
 
-It watches your Mac's audio activity, starts Lofi Girl when things are quiet,
+It watches your computer's audio activity, starts Lofi Girl when things are quiet,
 and holds playback when another app is making sound or using the microphone.
 It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 
 ## What it does
 
 - Plays Lofi Girl's lofi hip hop livestream by default.
-- Starts automatically when your Mac is silent.
+- Starts automatically when your computer is silent.
 - Yields to Spotify, YouTube, a call, or any other app using audio.
-- Holds immediately when Zoom, Meet, FaceTime, Teams, or another app opens the
-  microphone.
+- Holds immediately when Zoom, Meet, FaceTime, Teams, Discord, or another app
+  opens the microphone.
 - Stops the stream while holding and resolves it again on return (default).
   Mute mode is opt-in for a seamless silent hold.
 - Comes back after the call or other audio ends.
@@ -35,15 +36,31 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 
 ## Install
 
-macOS 14.4 or newer for now. Linux support will come later.
+Runs on **macOS 14.4+** and **Linux** (PipeWire or PulseAudio), on arm64 and
+amd64.
 
 Install the runtime dependencies:
 
 ```sh
+# macOS (Homebrew)
 brew install mpv yt-dlp ffmpeg
+
+# Arch Linux (PipeWire ships pw-dump)
+sudo pacman -S --needed mpv yt-dlp ffmpeg pipewire
+
+# Debian / Ubuntu
+sudo apt install mpv yt-dlp ffmpeg pipewire-bin
+
+# Fedora
+sudo dnf install mpv yt-dlp ffmpeg pipewire-utils
 ```
 
-Then install the latest release with curl:
+On Linux, audio detection reads stream metadata with `pw-dump` (PipeWire) and
+falls back to `pactl` (PulseAudio). Distro-packaged `yt-dlp` can lag behind
+YouTube; `pipx install yt-dlp` keeps it current.
+
+Then install the latest release with curl. The installer detects your OS and
+CPU automatically:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
@@ -53,7 +70,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.3.3
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.4.0
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -157,7 +174,8 @@ The default yield behavior is:
 hold_mode: stop
 ```
 
-To ignore an app completely, list a process name, bundle ID, or path substring:
+To ignore an app completely, list a process name, bundle ID (Flatpak app ID on
+Linux), or path substring:
 
 ```yaml
 bypass_apps:
@@ -190,8 +208,10 @@ When the window is narrow, the UI still works:
 
 ## How it works, briefly
 
-It uses macOS CoreAudio process flags to see which apps are producing output or
-using a microphone. A separate silent ffmpeg decode feeds the visualizers, while
+On macOS it uses CoreAudio process flags to see which apps are producing
+output or using a microphone. On Linux it reads PipeWire stream nodes with
+`pw-dump` (or PulseAudio streams with `pactl`): a running playback stream is
+other audio, a running capture stream is a call. A separate silent ffmpeg decode feeds the visualizers, while
 mpv handles playback. While yielding it stops the stream by default and resolves
 it again when silence returns. Set `hold_mode: mute` to keep streaming silently,
 or `hold_mode: pause` to pause. It never records your microphone.
@@ -220,7 +240,12 @@ portable skills in [`.agents/skills/`](.agents/README.md).
 
 - Lofi Girl livestream IDs change. Use a channel `/live` URL or edit the radio
   list when a specific stream retires.
-- If YouTube breaks, `brew upgrade yt-dlp`.
+- If YouTube breaks, upgrade yt-dlp (`brew upgrade yt-dlp`,
+  `sudo pacman -Syu yt-dlp`, or `pipx upgrade yt-dlp`).
 - `ffmpeg` is needed for the real spectrum. Playback still works if the analyser
   fails.
-- This is macOS-only. The CoreAudio probe has a stub for other platforms.
+- macOS and Linux are supported. Other platforms build, but audio detection
+  reports offline there and manual play still works.
+- On Linux, apps that capture desktop audio (visualizers such as cava) are not
+  treated as calls. Add anything else that should never interrupt lofi to
+  `bypass_apps`.

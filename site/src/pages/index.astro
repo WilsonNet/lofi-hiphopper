@@ -19,7 +19,7 @@ import Base from "../layouts/Base.astro";
       </nav>
       <div class="header-actions">
         <a class="header-github" href="https://github.com/WilsonNet/lofi-hiphopper">github ↗</a>
-        <span class="header-meta">v0.3.3 · macOS</span>
+        <span class="header-meta">v0.4.0 · macOS · Linux</span>
         <a class="header-install" href="#install">install <span aria-hidden="true">↵</span></a>
       </div>
     </header>
@@ -54,7 +54,7 @@ import Base from "../layouts/Base.astro";
             <div class="hero-copy">
               <div class="command-line"><span class="prompt">$</span> lofi-hiphopper <span class="cmd-comment"># fills silence, yields to audio</span></div>
               <h1 id="hero-title">Fill silence with lofi.<br><span class="accent-text">Not with noise.</span></h1>
-              <p class="lede">A macOS terminal companion that plays Lofi Girl when your Mac is quiet, gets out of the way for calls and other audio, and draws six live spectrum visualizers.</p>
+              <p class="lede">A terminal companion for macOS and Linux that plays Lofi Girl when your computer is quiet, gets out of the way for calls and other audio, and draws six live spectrum visualizers.</p>
             </div>
             <div class="hero-actions-panel">
               <div class="command-line"><span class="prompt">#</span> install</div>
@@ -62,7 +62,7 @@ import Base from "../layouts/Base.astro";
                 <a class="button primary" href="#install">Install</a>
                 <button class="button" id="hero-yield" type="button">See it yield</button>
               </div>
-              <p class="hero-note"><span class="prompt">#</span> free · open source · macOS 14.4+</p>
+              <p class="hero-note"><span class="prompt">#</span> free · open source · macOS 14.4+ · Linux</p>
             </div>
           </div>
 
@@ -143,7 +143,7 @@ import Base from "../layouts/Base.astro";
           <header class="section-head">
             <div class="command-line"><span class="prompt">#</span> behavior</div>
             <h2 id="features-title">Plays when quiet. Yields when it matters.</h2>
-            <p>No mixing, no talking over your meeting. lofi-hiphopper watches macOS audio activity and fills only the silence.</p>
+            <p>No mixing, no talking over your meeting. lofi-hiphopper watches system audio activity on macOS and Linux and fills only the silence.</p>
           </header>
           <div class="feature-table">
             <article class="feature-row">
@@ -205,23 +205,68 @@ import Base from "../layouts/Base.astro";
           <header class="section-head">
             <div class="command-line"><span class="prompt">#</span> install</div>
             <h2 id="install-title">One paste, then it listens.</h2>
-            <p>macOS 14.4 or newer. The block below installs the runtime dependencies, fetches the latest release, verifies its checksum, and puts the binary in <code>~/.local/bin</code>. Copy all three lines once.</p>
+            <p>macOS 14.4 or newer, or Linux with PipeWire or PulseAudio, on arm64 or amd64. Pick your system; the block installs the runtime dependencies, fetches the latest release, verifies its checksum, and puts the binary in <code>~/.local/bin</code>. Copy all three lines once.</p>
           </header>
           <div class="install-grid">
             <div class="install-block">
-              <p class="small-note install-prereq">Requires <a href="https://brew.sh">Homebrew ↗</a>. The commands below install the runtime dependencies, fetch the <a href="https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh">installer ↗</a>, and start the binary from <code>~/.local/bin</code>.</p>
-              <div class="code-shell">
-                <pre class="code-block" aria-label="Install commands"><code><span class="code-comment"># runtime dependencies (Homebrew)</span>
+              <p class="small-note install-prereq">macOS uses <a href="https://brew.sh">Homebrew ↗</a>; Linux uses your package manager plus PipeWire (<code>pw-dump</code>) or PulseAudio (<code>pactl</code>). The <a href="https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh">installer ↗</a> picks the right build for your OS and CPU.</p>
+              <div class="os-tabs" role="tablist" aria-label="Operating system">
+                <button class="os-tab" type="button" role="tab" id="os-tab-macos" aria-controls="os-panel-macos" aria-selected="true" tabindex="0" data-os="macos">macOS</button>
+                <button class="os-tab" type="button" role="tab" id="os-tab-arch" aria-controls="os-panel-arch" aria-selected="false" tabindex="-1" data-os="arch">Arch</button>
+                <button class="os-tab" type="button" role="tab" id="os-tab-debian" aria-controls="os-panel-debian" aria-selected="false" tabindex="-1" data-os="debian">Debian / Ubuntu</button>
+                <button class="os-tab" type="button" role="tab" id="os-tab-fedora" aria-controls="os-panel-fedora" aria-selected="false" tabindex="-1" data-os="fedora">Fedora</button>
+              </div>
+              <div class="code-shell os-panel" role="tabpanel" id="os-panel-macos" aria-labelledby="os-tab-macos" data-os="macos">
+                <pre class="code-block" aria-label="Install commands for macOS"><code><span class="code-comment"># runtime dependencies (Homebrew)</span>
 brew install mpv yt-dlp ffmpeg
 
-<span class="code-comment"># latest release</span>
+<span class="code-comment"># latest release · detects OS and CPU</span>
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
 
 <span class="code-comment"># start filling silence</span>
 ~/.local/bin/lofi-hiphopper</code></pre>
                 <button class="copy-button" type="button" data-copy="brew install mpv yt-dlp ffmpeg
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
-~/.local/bin/lofi-hiphopper" aria-label="Copy install commands">copy</button>
+~/.local/bin/lofi-hiphopper" aria-label="Copy install commands for macOS">copy</button>
+              </div>
+              <div class="code-shell os-panel" role="tabpanel" id="os-panel-arch" aria-labelledby="os-tab-arch" data-os="arch" hidden>
+                <pre class="code-block" aria-label="Install commands for Arch"><code><span class="code-comment"># runtime dependencies (pacman · PipeWire)</span>
+sudo pacman -S --needed mpv yt-dlp ffmpeg pipewire
+
+<span class="code-comment"># latest release · detects OS and CPU</span>
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+
+<span class="code-comment"># start filling silence</span>
+~/.local/bin/lofi-hiphopper</code></pre>
+                <button class="copy-button" type="button" data-copy="sudo pacman -S --needed mpv yt-dlp ffmpeg pipewire
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+~/.local/bin/lofi-hiphopper" aria-label="Copy install commands for Arch">copy</button>
+              </div>
+              <div class="code-shell os-panel" role="tabpanel" id="os-panel-debian" aria-labelledby="os-tab-debian" data-os="debian" hidden>
+                <pre class="code-block" aria-label="Install commands for Debian / Ubuntu"><code><span class="code-comment"># runtime dependencies (apt · PipeWire)</span>
+sudo apt install mpv yt-dlp ffmpeg pipewire-bin
+
+<span class="code-comment"># latest release · detects OS and CPU</span>
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+
+<span class="code-comment"># start filling silence</span>
+~/.local/bin/lofi-hiphopper</code></pre>
+                <button class="copy-button" type="button" data-copy="sudo apt install mpv yt-dlp ffmpeg pipewire-bin
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+~/.local/bin/lofi-hiphopper" aria-label="Copy install commands for Debian / Ubuntu">copy</button>
+              </div>
+              <div class="code-shell os-panel" role="tabpanel" id="os-panel-fedora" aria-labelledby="os-tab-fedora" data-os="fedora" hidden>
+                <pre class="code-block" aria-label="Install commands for Fedora"><code><span class="code-comment"># runtime dependencies (dnf · PipeWire)</span>
+sudo dnf install mpv yt-dlp ffmpeg pipewire-utils
+
+<span class="code-comment"># latest release · detects OS and CPU</span>
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+
+<span class="code-comment"># start filling silence</span>
+~/.local/bin/lofi-hiphopper</code></pre>
+                <button class="copy-button" type="button" data-copy="sudo dnf install mpv yt-dlp ffmpeg pipewire-utils
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash
+~/.local/bin/lofi-hiphopper" aria-label="Copy install commands for Fedora">copy</button>
               </div>
               <p class="small-note">Add <code>~/.local/bin</code> to PATH if you want the short <code>lofi-hiphopper</code> command. No config file is created. Defaults live inside the binary. To customize, run <code>lofi-hiphopper -print-config</code> and redirect it wherever you like. Prefer a binary? <a href="https://github.com/WilsonNet/lofi-hiphopper/releases/latest">Download release ↗</a></p>
             </div>
@@ -253,7 +298,7 @@ shortcuts:
           <div class="faq-list">
             <details>
               <summary>Does it record my microphone?</summary>
-              <p>No. It reads CoreAudio process flags to see whether an app has an active input or output stream. The only audio it decodes is the radio stream, silently, to draw the spectrum.</p>
+              <p>No. It reads CoreAudio process flags on macOS, or PipeWire/PulseAudio stream state on Linux, to see whether an app has an active input or output stream. The only audio it decodes is the radio stream, silently, to draw the spectrum.</p>
             </details>
             <details>
               <summary>What happens during a Zoom or Meet call?</summary>
@@ -265,7 +310,7 @@ shortcuts:
             </details>
             <details>
               <summary>Does it work on Linux?</summary>
-              <p>Not yet. This release is macOS-only because detection uses the CoreAudio per-process API. Linux support is planned for a future release.</p>
+              <p>Yes. Since v0.4.0 it runs on Linux with PipeWire (it reads stream state with <code>pw-dump</code>) and falls back to PulseAudio (<code>pactl</code>). It is tested on Arch Linux with PipeWire. Apps that only capture desktop audio, such as cava, are not treated as calls.</p>
             </details>
             <details>
               <summary>Why does it need mpv, yt-dlp, and ffmpeg?</summary>
@@ -295,7 +340,7 @@ shortcuts:
     <footer class="site-footer">
       <div class="footer-status">
         <span class="status-dot" aria-hidden="true"></span>
-        <span>lofi-hiphopper · macOS</span>
+        <span>lofi-hiphopper · macOS · Linux</span>
         <span class="footer-sep" aria-hidden="true">/</span>
         <span>built with <a href="https://charm.sh">Charm</a> Bubble Tea</span>
       </div>

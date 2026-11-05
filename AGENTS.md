@@ -9,9 +9,10 @@ test cannot be run, say exactly why and leave a reproducible command.
 
 ## What this project is
 
-`lofi-hiphopper` is a macOS terminal companion that fills silence with lofi. It
-plays YouTube or direct audio URLs through mpv, detects system audio activity
-through CoreAudio, and yields during calls or other playback. The UI is Bubble
+`lofi-hiphopper` is a macOS and Linux terminal companion that fills silence
+with lofi. It plays YouTube or direct audio URLs through mpv, detects system
+audio activity through CoreAudio (macOS) or PipeWire/PulseAudio (Linux), and
+yields during calls or other playback. The UI is Bubble
 Tea with a custom truecolor canvas and six FFT-driven visualizers.
 
 Read `docs/architecture.md` before changing playback, detection, or the state
@@ -35,11 +36,16 @@ When touching the player integration:
 LOFI_MPV_TEST=1 go test ./internal/player -run TestMPVIntegration -v
 ```
 
-When touching CoreAudio detection:
+When touching audio detection:
 
 ```bash
-go test ./internal/detect -run TestCoreAudio -v
+go test ./internal/detect -run TestCoreAudio -v                          # macOS
+go test ./internal/detect -run TestLinux -v                              # Linux
+LOFI_MPV_TEST=1 go test ./internal/detect -run TestLinuxAudioProbeSeesMPV -v
 ```
+
+The Linux probe parsers (`pw-dump`, `pactl`) are platform-neutral; keep their
+fixture tests passing on every OS.
 
 The mpv integration test plays a generated tone into `--ao=null`; it is silent.
 

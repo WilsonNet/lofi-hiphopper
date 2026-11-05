@@ -46,7 +46,7 @@ type Resolver interface {
 	Resolve(ctx context.Context, pageURL string) (media.Stream, error)
 }
 
-// Probe enumerates macOS audio processes.
+// Probe enumerates audio clients (CoreAudio processes or Linux streams).
 type Probe interface {
 	Processes() ([]detect.Process, error)
 }

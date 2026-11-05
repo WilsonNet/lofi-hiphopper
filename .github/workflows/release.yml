@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -30,26 +30,64 @@ jobs:
           VERSION="${TAG#v}"
           rm -rf dist package
           mkdir -p dist
-          for ARCH in arm64 amd64; do
+          # macOS needs cgo for CoreAudio; Linux shells out to pw-dump/pactl
+          # and is a static, cgo-free build.
+          for TARGET in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64; do
+            OS="${TARGET%/*}"
+            ARCH="${TARGET#*/}"
+            CGO=0
+            [ "$OS" = darwin ] && CGO=1
             rm -rf package
             mkdir package
-            CGO_ENABLED=1 GOOS=darwin GOARCH="$ARCH" go build -trimpath \
+            CGO_ENABLED="$CGO" GOOS="$OS" GOARCH="$ARCH" go build -trimpath \
               -ldflags "-s -w -X main.version=$VERSION" \
               -o package/lofi-hiphopper .
             cp README.md install.sh package/
-            (cd package && tar -czf "../dist/lofi-hiphopper_darwin_${ARCH}.tar.gz" lofi-hiphopper README.md install.sh)
+            (cd package && tar -czf "../dist/lofi-hiphopper_${OS}_${ARCH}.tar.gz" lofi-hiphopper README.md install.sh)
+            file package/lofi-hiphopper || true
           done
           cp install.sh dist/install.sh
-          (cd dist && shasum -a 256 lofi-hiphopper_darwin_arm64.tar.gz lofi-hiphopper_darwin_amd64.tar.gz install.sh > checksums.txt)
-          file package/lofi-hiphopper || true
+          (cd dist && shasum -a 256 lofi-hiphopper_*.tar.gz install.sh > checksums.txt)
           cat dist/checksums.txt
-      - name: Verify installer
+      - name: Verify installer (macOS)
         env:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           VERSION="$TAG" BASE_URL="file://$PWD/dist" INSTALL_DIR="$RUNNER_TEMP/lofi-install" ./install.sh
           "$RUNNER_TEMP/lofi-install/lofi-hiphopper" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  verify-linux:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Verify installer (Linux)
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="$TAG" BASE_URL="file://$PWD/dist" INSTALL_DIR="$RUNNER_TEMP/lofi-install" sh ./install.sh
+          "$RUNNER_TEMP/lofi-install/lofi-hiphopper" --version
+
+  publish:
+    needs: [build, verify-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:

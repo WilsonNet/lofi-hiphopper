@@ -15,6 +15,7 @@ import (
 	"github.com/wilsonpsn/lofi-hiphopper/internal/config"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/detect"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/media"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/platform"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/player"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/ui"
 	"github.com/wilsonpsn/lofi-hiphopper/internal/update"
@@ -123,7 +124,7 @@ func checkTools(tools ...string) error {
 	if len(missing) == 0 {
 		return nil
 	}
-	return fmt.Errorf("missing %s — install with: brew install %s", strings.Join(missing, ", "), strings.Join(missing, " "))
+	return fmt.Errorf("missing %s — install with: %s", strings.Join(missing, ", "), platform.InstallHint(missing...))
 }
 
 func fatal(err error) {

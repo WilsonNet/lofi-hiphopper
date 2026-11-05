@@ -61,14 +61,15 @@ ffmpeg -i a.png -i b.png -i c.png \
 
 Keep each input the same dimensions.
 
-## Fallback: macOS screenshot
+## Fallback: OS screenshot
 
 If `freeze` cannot render the captured ANSI, focus the Herdr tab and take a
-macOS screenshot instead:
+screenshot instead:
 
 ```bash
 herdr tab focus <tab-id>
-screencapture -x /tmp/tui-screen.png
+screencapture -x /tmp/tui-screen.png   # macOS
+grim /tmp/tui-screen.png               # Linux (Wayland)
 ```
 
 Crop to the terminal window before using it. Never ship a full desktop capture

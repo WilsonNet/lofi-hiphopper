@@ -11,6 +11,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/wilsonpsn/lofi-hiphopper/internal/platform"
 )
 
 // Stream is a resolved playable URL plus display metadata.
@@ -76,7 +78,7 @@ func (r *Resolver) Resolve(ctx context.Context, pageURL string) (Stream, error) 
 		binary = "yt-dlp"
 	}
 	if _, err := exec.LookPath(binary); err != nil {
-		return Stream{}, fmt.Errorf("yt-dlp not found (install it with: brew install yt-dlp)")
+		return Stream{}, fmt.Errorf("yt-dlp not found (install it with: %s)", platform.InstallHint("yt-dlp"))
 	}
 
 	timeout := r.Timeout
