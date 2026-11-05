@@ -1,5 +1,5 @@
 ---
-name: Documentation
+name: documentation
 description: Use when writing or changing a README, docs/ pages, user guides, release notes, or screenshots. Keeps the README human-friendly, moves deep material into docs/, captures real TUI screenshots with Charm freeze, and verifies links and commands.
 ---
 

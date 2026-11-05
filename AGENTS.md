@@ -112,7 +112,9 @@ output; a screenshot alone is not evidence of state.
 - `.agents/skills/documentation/SKILL.md` — human-friendly README, deep docs in
   `docs/`, and real TUI screenshots rendered with Charm freeze.
 
-The `.agents/skills/` layout is intentionally tool-agnostic. Keep reusable
+The `.agents/skills/` layout is intentionally tool-agnostic. Claude Code finds
+it through the `.claude/skills` symlink; keep each skill's frontmatter `name`
+equal to its directory name. Keep reusable
 workflows there; keep project-specific commands in this file.
 
 ## Website

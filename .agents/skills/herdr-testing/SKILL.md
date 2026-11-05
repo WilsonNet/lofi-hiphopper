@@ -1,5 +1,5 @@
 ---
-name: Herdr Real Test Loop
+name: herdr-testing
 description: Use when a change needs a real end-to-end or interactive check in a Herdr workspace, especially for TUIs, audio, browser flows, daemons, or long-running processes. Runs fast checks first, drives the actual app in an isolated Herdr tab, captures pane evidence, and cleans up.
 ---
 

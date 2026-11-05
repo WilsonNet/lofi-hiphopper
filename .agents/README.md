@@ -5,10 +5,15 @@ coding agent can read, not vendor-specific configuration.
 
 - `skills/<id>/SKILL.md` is the portable skill format. OpenCode discovers this
   path as a project compatibility source; other agents can read the same files.
+  The frontmatter `name` must equal the directory `<id>` (lowercase, hyphens).
+- Claude Code discovers skills through `.claude/skills`, a symlink to
+  `.agents/skills`. It reads `AGENTS.md` natively (v2.1.277+) while no
+  `CLAUDE.md` exists, so do not add one; if Claude-only notes are ever needed,
+  create `CLAUDE.md` containing `@AGENTS.md` plus those notes.
 - Skills may keep scripts, references, and templates beside `SKILL.md`.
 - Project commands and invariants live at the repository root in `AGENTS.md`.
   Skills stay reusable; `AGENTS.md` supplies the project-specific specifics.
-- Tool-specific files (for example `.opencode/`) should be thin pointers, not
+- Tool-specific files (for example `.opencode/`, `.claude/`) should be thin pointers, not
   duplicate copies of these instructions.
 
 ## Skills
