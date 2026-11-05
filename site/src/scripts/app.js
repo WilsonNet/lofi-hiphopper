@@ -34,7 +34,8 @@ let dpr = 1;
 let ctx = null;
 let last = 0;
 let cycleTimer = 0;
-let manualUntil = 0;
+let autoCycle = true;
+let holdingDemo = false;
 const bands = new Float32Array(BAND_COUNT);
 const peaks = new Float32Array(BAND_COUNT);
 const reflection = new Float32Array(BAND_COUNT);
@@ -420,10 +421,16 @@ function drawStatic() {
   draw();
 }
 
-function setMode(next) {
+function setMode(next, manual = true) {
   mode = (next + MODES.length) % MODES.length;
   modeLabel.textContent = `${MODES[mode]} · ${mode + 1}/6`;
-  manualUntil = performance.now() + 18000;
+  if (manual && autoCycle) {
+    autoCycle = false;
+    if (cycleTimer) {
+      clearInterval(cycleTimer);
+      cycleTimer = 0;
+    }
+  }
   draw();
 }
 
@@ -432,8 +439,10 @@ function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (!reducedMotion.matches) {
-    smooth(dt);
-    draw();
+    if (!holdingDemo) {
+      smooth(dt);
+      draw();
+    }
     requestAnimationFrame(loop);
   }
 }
@@ -441,10 +450,8 @@ function loop(now) {
 function startCycling() {
   if (cycleTimer) clearInterval(cycleTimer);
   cycleTimer = window.setInterval(() => {
-    if (reducedMotion.matches) return;
-    if (performance.now() < manualUntil) return;
-    setMode(mode + 1);
-    manualUntil = 0;
+    if (reducedMotion.matches || !autoCycle) return;
+    setMode(mode + 1, false);
   }, 9500);
 }
 
@@ -480,7 +487,7 @@ document.querySelectorAll(".copy-button").forEach((button) => {
         toast.classList.remove("show");
       }, 1800);
     }).catch(() => {
-      toast.textContent = "copy failed";
+      toast.textContent = "copy failed — select it manually";
       toast.classList.add("show");
       window.setTimeout(() => toast.classList.remove("show"), 1800);
     });
@@ -507,6 +514,146 @@ if (dialog) {
   dialogClose?.addEventListener("click", () => dialog.close());
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) dialog.close();
+  });
+}
+
+const railState = document.querySelector("#rail-state");
+const radioPlaying = document.querySelector("#radio-playing");
+const holdChip = document.querySelector("#hold-chip");
+const railStateLabel = document.querySelector("#rail-state-label");
+const railPlayer = document.querySelector("#rail-player");
+const fillState = document.querySelector("#fill-state");
+const signalAudio = document.querySelector("#signal-audio");
+const signalSpectrum = document.querySelector("#signal-spectrum");
+const signalPlayer = document.querySelector("#signal-player");
+const vizBadge = document.querySelector("#viz-badge");
+const nowLabel = document.querySelector("#now-label");
+const nowTitle = document.querySelector("#now-title");
+const nowSub = document.querySelector("#now-sub");
+const nowStatus = document.querySelector("#now-status");
+const nowState = document.querySelector("#now-state");
+const nowVolume = document.querySelector("#now-volume");
+const termStatusLine = document.querySelector("#term-status-line");
+const termStatusText = document.querySelector("#term-status-text");
+const yieldButton = document.querySelector("#yield-demo");
+const yieldLabel = yieldButton?.querySelector(".demo-run-label");
+const heroYield = document.querySelector("#hero-yield");
+const demoShortcuts = document.querySelector("#demo-shortcuts");
+
+const demoStates = {
+  silence: {
+    rail: "SILENCE",
+    player: "mpv · 55%",
+    fill: "FILLING",
+    nowLabel: "NOW PLAYING",
+    title: "Lofi Girl · lofi hip hop radio",
+    sub: "lofi hip hop radio 📚 beats to relax/study to",
+    state: "LIVE",
+    volume: "vol 55%",
+    audio: "silence",
+    spectrum: "live",
+    signalPlayer: "mpv · 55%",
+    status: "SILENCE · filling with lofi",
+    badge: "",
+  },
+  call: {
+    rail: "MIC · Zoom",
+    player: "mpv · stopped",
+    fill: "HOLDING",
+    nowLabel: "HOLDING",
+    title: "Zoom · microphone",
+    sub: "call detected · playback stopped",
+    state: "STOPPED",
+    volume: "",
+    audio: "input · Zoom",
+    spectrum: "held",
+    signalPlayer: "mpv · stopped",
+    status: "CALL · holding playback",
+    badge: "CALL HOLD",
+  },
+};
+
+const setText = (element, text) => {
+  if (element) element.textContent = text;
+};
+
+function setDemoState(state) {
+  const config = demoStates[state];
+  if (!config || !terminal) return;
+  terminal.dataset.demo = state;
+  holdingDemo = state !== "silence";
+  setText(railStateLabel, config.rail);
+  setText(railPlayer, config.player);
+  setText(fillState, config.fill);
+  setText(signalAudio, config.audio);
+  setText(signalSpectrum, config.spectrum);
+  setText(signalPlayer, config.signalPlayer);
+  setText(nowLabel, config.nowLabel);
+  setText(nowTitle, config.title);
+  setText(nowSub, config.sub);
+  setText(nowState, config.state);
+  setText(nowVolume, config.volume);
+  setText(termStatusText, config.status);
+  const active = state === "call";
+  setText(yieldLabel, active ? "end call" : "simulate call");
+  setText(heroYield, active ? "End call" : "See it yield");
+  railState?.classList.toggle("is-call", active);
+  nowStatus?.classList.toggle("is-call", state === "call");
+  signalSpectrum?.classList.toggle("ok", state === "silence");
+  termStatusLine?.classList.toggle("is-call", state === "call");
+  if (radioPlaying) {
+    radioPlaying.textContent = active ? "○" : "●";
+    radioPlaying.classList.toggle("playing", !active);
+  }
+  if (holdChip) holdChip.hidden = !active;
+  document.body.classList.toggle("demo-held", active);
+  if (!active) updatePeak();
+  else if (peakLabel) peakLabel.textContent = "peak —";
+  if (vizBadge) {
+    vizBadge.hidden = state === "silence";
+    vizBadge.textContent = config.badge;
+  }
+}
+
+function toggleYieldDemo() {
+  setDemoState(terminal?.dataset.demo === "call" ? "silence" : "call");
+}
+
+yieldButton?.addEventListener("click", toggleYieldDemo);
+heroYield?.addEventListener("click", () => {
+  const active = terminal?.dataset.demo === "call";
+  setDemoState(active ? "silence" : "call");
+  if (!active) {
+    terminal?.scrollIntoView({
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+      block: "center",
+    });
+    yieldButton?.focus({ preventScroll: true });
+  }
+});
+demoShortcuts?.addEventListener("click", () => dialog?.showModal());
+holdChip?.addEventListener("click", () => setDemoState("silence"));
+setDemoState("silence");
+
+const imageDialog = document.querySelector("#image-dialog");
+const imageDialogImg = document.querySelector("#image-dialog-img");
+const imageDialogTitle = document.querySelector("#image-dialog-title");
+const imageDialogClose = document.querySelector(".image-dialog-close");
+
+document.querySelectorAll(".screen-button, .screen-open").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (!imageDialog || !imageDialogImg) return;
+    imageDialogImg.src = button.dataset.image || "";
+    imageDialogImg.alt = button.dataset.alt || "";
+    setText(imageDialogTitle, button.dataset.title || "Screenshot");
+    imageDialog.showModal();
+  });
+});
+
+if (imageDialog) {
+  imageDialogClose?.addEventListener("click", () => imageDialog.close());
+  imageDialog.addEventListener("click", (event) => {
+    if (event.target === imageDialog) imageDialog.close();
   });
 }
 

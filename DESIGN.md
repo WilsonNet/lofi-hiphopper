@@ -13,8 +13,8 @@ colors:
   hairline: "#23233a"
   code-void: "#090911"
   ink: "#e9e4ff"
-  muted: "#8a85a3"
-  dim: "#7c7799"
+  muted: "#9a95b3"
+  dim: "#8a85a3"
   success: "#8fe7b0"
   cream: "#fff3dd"
 typography:
@@ -166,7 +166,7 @@ heat, mint reserved for configuration and success.
 - **Code Void** (`#090911`): Code blocks, one step darker than panels.
 - **Hairline** (`#23233a`): Every border and divider. One pixel, never thicker.
 - **Ink** (`#e9e4ff`): Primary text. Slightly violet, never pure white.
-- **Muted** (`#8a85a3`): Body prose, secondary labels, navigation at rest.
+- **Muted** (`#9a95b3`): Body prose, secondary labels, navigation at rest.
 - **Dim** (`#7c7799`): Metadata, hints, footer, and non-essential labels. It must still clear 4.5:1 on the page field.
 - **Success** (`#8fe7b0`): Live and silence-ready status dots.
 - **Cream** (`#fff3dd`): The brightest highlight, used on hover text and dialog
@@ -309,12 +309,13 @@ the fill to hot pink. It is the only filled action on the page.
   rows; 16px 18px for code blocks.
 
 ### Inputs / Fields
-- **Style:** The install command is a bordered field with panel-ink fill and a
-  compact copy button. The button uses panel-raised fill, ultraviolet text, a
-  4px radius, and a hairline border.
+- **Style:** The install command is a dark code block with one copy button.
+  The button uses panel-raised fill, ultraviolet text, a 4px radius, a 44px
+  minimum height on mobile, and a hairline border.
 - **Focus:** Global `:focus-visible` uses a 2px peach outline at 4px offset.
-- **Behavior:** Copy shows a fixed success toast at the bottom right; the
-  button label changes to "copied" for 1.8s. No layout shift.
+- **Behavior:** Copy writes all three install lines and shows a fixed success
+  toast at the bottom right; the button label changes to "copied" for 1.8s. No
+  layout shift.
 
 ### Navigation
 - **Top bar:** Mono 0.82rem, muted grey, 2px gaps, no underlines. The active
@@ -329,15 +330,38 @@ the fill to hot pink. It is the only filled action on the page.
 ### Terminal Preview (Signature)
 A tabindex-focusable terminal window with a 1px `#2d2b47` border, 12px radius,
 and the only deep shadow on the page. The title bar carries traffic dots, a
-`120×40` label, and a `DEMO` badge. Inside: a radio list, signal readout, and a
-live canvas visualizer in a 220px/fluid two-column grid. Panel titles overlap
-their top borders. The canvas is clickable and supports `h` / `l`; the demo is
-decorative and must never imply real system audio.
+`120×40` label, and a `DEMO` badge. Inside: a radio list, signal
+readout, and a live canvas visualizer in a 220px/fluid two-column grid. Panel
+titles overlap their top borders. The canvas is clickable and supports `h` / `l`.
+
+The preview also runs one honest yield demo: `simulate call` holds playback on
+`Zoom · microphone` until the visitor selects `end call`. During a hold the
+spectrum freezes, dims, and reports `peak —`; the radio's playing dot turns to
+an empty circle, the border shifts to pink, and the rail, signal panel,
+now-playing row, and status line all report the same state. A fixed
+`MIC · Zoom / end call` status bar keeps the hold
+resolvable anywhere on the page without covering content. The demo control and
+a visible app-shortcut button sit above the terminal; the shortcut sheet is
+labeled as app-only.
 
 ### Key Caps (Signature)
 Small mono caps with 3px radius, panel-raised fill, ultraviolet glyphs, and a
 1px border whose bottom edge is darker. They are used inside prose and terminal
 hints, never as buttons.
+
+### Yield Demo (Signature)
+A compact control above the terminal: `simulate call` → `end call`. The hold
+persists until the visitor ends it, so the call state is never a timed flash.
+It is the only interactive state control and it drives every status surface in
+the preview. A second `app shortcuts` button opens the app-only shortcut sheet
+for touch users, and the fixed hold status bar remains available after
+scrolling.
+Reduced-motion mode changes the text and colors without animating the
+spectrum.
+
+**The Resolvable Hold Rule.** Any demo state that changes the whole page must
+expose an exit from anywhere. The fixed hold status bar, the demo button, and
+the hero toggle are the same exit at three distances.
 
 ## Do's and Don'ts
 
@@ -351,7 +375,8 @@ hints, never as buttons.
   glow.
 - **Do** concentrate ultraviolet, hot pink, and peach in the signal: colored
   headline, primary action, visualizer, live dots.
-- **Do** use real TUI screenshots and label demo-mode captures.
+- **Do** use real TUI screenshots, label demo-mode captures, and make every
+  visible control work or name its scope.
 - **Do** preserve keyboard access, visible focus, and reduced-motion support.
 
 ### Don't:
@@ -362,4 +387,5 @@ hints, never as buttons.
 - **Don't** add scroll reveals, parallax, or ambient motion. Motion belongs to
   live data and state changes.
 - **Don't** set body paragraphs in mono or terminal labels in sans.
+- **Don't** advertise TUI shortcuts as working web controls.
 - **Don't** invent testimonials, user counts, benchmarks, or product claims.

@@ -82,8 +82,27 @@ If the change interacts with the system, create the real stimulus:
 - **Filesystem**: use a temporary directory outside the repo.
 - **Input**: send keys or mouse events to the app pane and read the result.
 
-For a browser driven by Playwright, prefer a headed browser in a pane. Put the
-browser command in the pane's command, not in the app pane.
+For a browser driven by Playwright, prefer a headed browser in a dedicated
+Herdr pane. Put the browser command in that pane's command, not in the app
+pane, and never run a long Playwright script in the agent's foreground shell.
+
+Write the script so it leaves a progress trail:
+
+```bash
+S=.agents/skills/herdr-testing/scripts/herdr-tab
+LOG="$(mktemp -t playwright-test).log"
+$S create "playwright-<change-slug>" "$PWD"
+$S run "$PANE" "node playwright-test.mjs 2>&1 | tee '$LOG'; printf '\nEXIT:%s\n' \$?"
+$S wait "$PANE" "STEP:ready" 30000
+$S read "$PANE" 120
+```
+
+The script must print a marker before and after each risky step
+(`STEP:navigate`, `STEP:ready`, `STEP:action`, `STEP:capture`) and print
+`EXIT:<code>` when it ends. Poll the pane or `$LOG` while doing other work. If
+the pane shows no new marker within the step's timeout, capture the pane,
+kill only the test process or test tab, and report the exact stuck step. Never
+wait forever on a browser subagent or Playwright call with no output.
 
 ## Step 4 — assert both directions
 
@@ -126,6 +145,8 @@ the cause, and restart from Step 0. Do not retry blindly.
 - No closing the user's panes, tabs, or workspaces.
 - No loud audio tests. Use low volume or a silent test configuration.
 - No claiming success without pane output or test output.
+- Run long browser/Playwright work in its own Herdr pane with step markers and
+  poll it; a silent subagent is a stuck subagent, not a pass.
 - Repeat the loop until the fast checks and the real test both pass.
 - Keep project commands in `AGENTS.md`, not in this skill.
 

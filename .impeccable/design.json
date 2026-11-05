@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-04T19:07:52Z",
+  "generatedAt": "2026-11-04T22:20:00Z",
   "title": "Design System: lofi-hiphopper",
   "extensions": {
     "colorMeta": {
@@ -172,6 +172,21 @@
       "muted": {
         "role": "neutral",
         "displayName": "Muted",
+        "canonical": "#9a95b3",
+        "tonalRamp": [
+          "#23222b",
+          "#3d3a4d",
+          "#57526f",
+          "#706992",
+          "#918caa",
+          "#b1aec2",
+          "#d2d0da",
+          "#f1f1f4"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
         "canonical": "#8a85a3",
         "tonalRamp": [
           "#24222a",
@@ -180,21 +195,6 @@
           "#726c8f",
           "#928ea8",
           "#b2b0c0",
-          "#d2d1da",
-          "#f1f1f3"
-        ]
-      },
-      "dim": {
-        "role": "neutral",
-        "displayName": "Dim",
-        "canonical": "#7c7799",
-        "tonalRamp": [
-          "#23222a",
-          "#3e3b4b",
-          "#58546d",
-          "#716c90",
-          "#918ea8",
-          "#b2afc1",
           "#d2d1da",
           "#f1f1f3"
         ]
@@ -345,14 +345,14 @@
       "kind": "card",
       "refersTo": "panel",
       "description": "Hairline panel with an overlapping uppercase title, used for radio, signal, and config.",
-      "html": "<section class=\"ds-panel\"><span class=\"ds-panel-title\">RADIO</span><span class=\"ds-panel-hint\">j/k \u00b7 enter</span><ul class=\"ds-radio\"><li class=\"ds-selected\"><span>\u25b8</span><span class=\"ds-playing\">\u25cf</span> lofi hip hop</li><li><span></span><span>\u25cb</span> live now</li><li><span></span><span>\u25cb</span> synthwave radio</li><li><span></span><span>\u25cb</span> chillhop</li></ul></section>",
-      "css": ".ds-panel { position: relative; padding: 14px 11px 11px; border: 1px solid var(--border); border-radius: 6px; background: rgba(13, 13, 24, 0.94); color: var(--ink); font-family: var(--mono); } .ds-panel-title { position: absolute; top: -0.7em; left: 10px; padding: 0 6px; background: var(--panel); color: var(--accent); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.13em; line-height: 1.4; } .ds-panel-hint { position: absolute; top: -0.66em; right: 9px; padding: 0 6px; background: var(--panel); color: var(--dim); font-size: 0.62rem; } .ds-radio { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.76rem; line-height: 1.5; } .ds-radio li { display: flex; gap: 6px; padding: 3px 5px; border-radius: 4px; white-space: nowrap; } .ds-radio li span:first-child { display: inline-block; width: 13px; color: var(--accent); } .ds-radio li span:nth-child(2) { display: inline-block; width: 13px; color: var(--dim); } .ds-radio .ds-selected { background: linear-gradient(90deg, rgba(201, 167, 255, 0.16), rgba(201, 167, 255, 0.03)); color: var(--ink); } .ds-radio .ds-playing { color: var(--pink) !important; }"
+      "html": "<section class=\"ds-panel\"><span class=\"ds-panel-title\">RADIO</span><ul class=\"ds-radio\"><li class=\"ds-selected\"><span>\u25b8</span><span class=\"ds-playing\">\u25cf</span> lofi hip hop</li><li><span></span><span>\u25cb</span> live now</li><li><span></span><span>\u25cb</span> synthwave radio</li><li><span></span><span>\u25cb</span> chillhop</li></ul></section>",
+      "css": ".ds-panel { position: relative; padding: 14px 11px 11px; border: 1px solid var(--border); border-radius: 6px; background: rgba(13, 13, 24, 0.94); color: var(--ink); font-family: var(--mono); } .ds-panel-title { position: absolute; top: -0.7em; left: 10px; padding: 0 6px; background: var(--panel); color: var(--accent); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.13em; line-height: 1.4; } .ds-radio { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.76rem; line-height: 1.5; } .ds-radio li { display: flex; gap: 6px; padding: 3px 5px; border-radius: 4px; white-space: nowrap; } .ds-radio li span:first-child { display: inline-block; width: 13px; color: var(--accent); } .ds-radio li span:nth-child(2) { display: inline-block; width: 13px; color: var(--dim); } .ds-radio .ds-selected { background: linear-gradient(90deg, rgba(201, 167, 255, 0.16), rgba(201, 167, 255, 0.03)); color: var(--ink); } .ds-radio .ds-playing { color: var(--pink) !important; }"
     },
     {
       "name": "Terminal Window",
       "kind": "custom",
       "refersTo": "terminal-shell",
-      "description": "The signature object: a tabindex-focusable terminal with traffic dots, instrument panels, and a live spectrum.",
+      "description": "The signature object: a terminal with traffic dots, instrument panels, a live spectrum, and a hands-on yield-state demo.",
       "html": "<div class=\"ds-terminal\"><div class=\"ds-terminal-bar\"><span class=\"ds-traffic\"><i></i><i></i><i></i></span><span>lofi-hiphopper \u2014 120\u00d740</span><span class=\"ds-badge\">DEMO</span></div><div class=\"ds-terminal-screen\"><div class=\"ds-term-head\"><span class=\"ds-live-dot\"></span> lofi hiphopper <span class=\"ds-notice\">silence \u2192 sound</span><span class=\"ds-fill\">AUTO-FILL ON \u25cf FILLING</span></div><div class=\"ds-term-rule\"></div><div class=\"ds-term-grid\"><div class=\"ds-mini\"><span class=\"ds-mini-title\">RADIO</span><ul><li class=\"ds-selected\">\u25b8\u25cf lofi hip hop</li><li>\u25cb\u25cb live now</li><li>\u25cb\u25cb synthwave radio</li><li>\u25cb\u25cb chillhop</li></ul></div><div class=\"ds-mini\"><span class=\"ds-mini-title\">VISUALIZER</span><div class=\"ds-bars\"><i style=\"--h:22%\"></i><i style=\"--h:36%\"></i><i style=\"--h:58%\"></i><i style=\"--h:44%\"></i><i style=\"--h:70%\"></i><i style=\"--h:52%\"></i><i style=\"--h:86%\"></i><i style=\"--h:64%\"></i><i style=\"--h:40%\"></i><i style=\"--h:54%\"></i><i style=\"--h:72%\"></i><i style=\"--h:48%\"></i><i style=\"--h:62%\"></i><i style=\"--h:78%\"></i><i style=\"--h:56%\"></i><i style=\"--h:34%\"></i></div><div class=\"ds-axis\"><span>63</span><span>250</span><span>1k</span><span>4k</span><span>16k</span></div></div></div><div class=\"ds-now\"><span>NOW PLAYING</span><strong>Lofi Girl \u00b7 lofi hip hop radio</strong><span>LIVE vol 55%</span></div></div></div>",
       "css": ".ds-terminal { position: relative; overflow: hidden; border: 1px solid #2d2b47; border-radius: 12px; background: linear-gradient(180deg, #11101b, #09090f); box-shadow: 0 0 0 1px rgba(201, 167, 255, 0.04), 0 28px 90px rgba(0, 0, 0, 0.55), 0 0 80px rgba(123, 92, 255, 0.12); color: var(--ink); font-family: var(--mono); font-size: 0.86rem; } .ds-terminal-bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: #0a0a12; color: var(--dim); font-size: 0.72rem; } .ds-traffic { display: inline-flex; gap: 5px; } .ds-traffic i { width: 8px; height: 8px; border-radius: 50%; background: #ff7b8a; } .ds-traffic i:nth-child(2) { background: #ffc46b; } .ds-traffic i:nth-child(3) { background: #8fe7b0; } .ds-badge { margin-left: auto; color: var(--accent); } .ds-terminal-screen { padding: 16px 16px 13px; } .ds-term-head { display: flex; align-items: center; gap: 12px; font-size: 0.78rem; } .ds-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 12px rgba(143, 231, 176, 0.85); } .ds-notice { color: var(--muted); } .ds-fill { margin-left: auto; color: var(--muted); font-size: 0.7rem; } .ds-term-rule { height: 1px; margin: 11px 0 14px; background: linear-gradient(90deg, var(--accent), rgba(201, 167, 255, 0.16) 28%, var(--border)); } .ds-term-grid { display: grid; grid-template-columns: minmax(180px, 0.82fr) minmax(0, 1.52fr); gap: 12px; } .ds-mini { position: relative; padding: 14px 11px 11px; border: 1px solid var(--border); border-radius: 6px; background: rgba(13, 13, 24, 0.94); } .ds-mini-title { position: absolute; top: -0.7em; left: 10px; padding: 0 6px; background: var(--panel); color: var(--accent); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.13em; } .ds-mini ul { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.76rem; line-height: 1.5; } .ds-mini li { padding: 3px 5px; border-radius: 4px; white-space: nowrap; } .ds-mini .ds-selected { background: linear-gradient(90deg, rgba(201, 167, 255, 0.16), rgba(201, 167, 255, 0.03)); color: var(--ink); } .ds-bars { display: flex; align-items: flex-end; gap: 5px; height: 150px; padding: 12px 2px 4px; } .ds-bars i { flex: 1; height: var(--h); border-radius: 1px; background: linear-gradient(180deg, var(--peach), var(--pink) 45%, var(--accent)); } .ds-axis { display: flex; justify-content: space-between; padding: 4px 3px 0; color: var(--dim); font-size: 0.6rem; } .ds-now { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: baseline; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); font-size: 0.74rem; } .ds-now span:first-child { color: var(--pink); font-size: 0.64rem; letter-spacing: 0.12em; } .ds-now strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .ds-now span:last-child { color: var(--muted); font-size: 0.64rem; white-space: nowrap; }"
     },
@@ -386,6 +386,20 @@
       "description": "Mono text navigation with a pink GitHub link and optional version metadata.",
       "html": "<nav class=\"ds-nav\"><a href=\"#\">features</a><a href=\"#\">preview</a><a href=\"#\">install</a><a href=\"#\">faq</a><a class=\"ds-nav-github\" href=\"#\">github \u2197</a><span class=\"ds-nav-meta\">v0.3.2 \u00b7 macOS</span></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 22px; font-family: var(--mono); font-size: 0.82rem; } .ds-nav a { color: var(--muted); text-decoration: none; } .ds-nav a:hover { color: var(--ink); } .ds-nav .ds-nav-github { color: var(--pink); } .ds-nav-meta { padding-left: 20px; border-left: 1px solid var(--border); color: var(--dim); font-size: 0.8rem; white-space: nowrap; }"
+    },
+    {
+      "name": "Yield Demo Button",
+      "kind": "button",
+      "description": "The only added control: simulate a call, hold until the visitor ends it, and sync every status surface.",
+      "html": "<button class=\"ds-demo-run\" type=\"button\"><span aria-hidden=\"true\">\u25b6</span> simulate call</button>",
+      "css": ".ds-demo-run { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-raised); color: var(--accent); font-family: var(--mono); font-size: 0.68rem; cursor: pointer; transition: border-color 140ms ease, color 140ms ease, background 140ms ease; } .ds-demo-run:hover { border-color: var(--accent); background: var(--panel); color: var(--cream); } .ds-demo-run:disabled { cursor: wait; opacity: 0.65; }"
+    },
+    {
+      "name": "Hold Chip",
+      "kind": "button",
+      "description": "Fixed bottom status bar that keeps the demo hold resolvable without covering content.",
+      "html": "<button class=\"ds-hold-chip\" type=\"button\"><span class=\"ds-hold-dot\"></span> MIC \u00b7 Zoom <span class=\"ds-hold-action\">end call</span></button>",
+      "css": ".ds-hold-chip { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 7px 16px; border: 0; border-top: 1px solid var(--pink); background: rgba(13, 13, 24, 0.98); color: var(--pink); font-family: var(--mono); font-size: 0.72rem; cursor: pointer; } .ds-hold-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 12px rgba(255, 134, 194, 0.8); } .ds-hold-action { padding-left: 8px; border-left: 1px solid rgba(255, 134, 194, 0.35); color: var(--cream); }"
     }
   ],
   "narrative": {
@@ -424,6 +438,11 @@
         "name": "The Hairline Rule",
         "body": "Structure comes from 1px #23233a borders and spacing, not from shadows or background fills. A panel should still read as a panel in grayscale.",
         "section": "layout"
+      },
+      {
+        "name": "The Resolvable Hold Rule",
+        "body": "Any demo state that changes the whole page must expose an exit from anywhere. The fixed hold status bar, the demo button, and the hero toggle are the same exit at three distances.",
+        "section": "components"
       }
     ],
     "dos": [
@@ -432,8 +451,9 @@
       "Do set headlines and interface labels in the mono stack, and long prose in Avenir Next or the system sans fallback.",
       "Do keep the terminal as the only object with a deep shadow and broad glow.",
       "Do concentrate ultraviolet, hot pink, and peach in the signal: colored headline, primary action, visualizer, live dots.",
-      "Do use real TUI screenshots and label demo-mode captures.",
-      "Do preserve keyboard access, visible focus, and reduced-motion support."
+      "Do use real TUI screenshots, label demo-mode captures, and make every visible control work or name its scope.",
+      "Do preserve keyboard access, visible focus, and reduced-motion support.",
+      "Do keep a demo hold resolvable from anywhere on the page."
     ],
     "donts": [
       "Don't use pure black #000 or pure white #fff.",
@@ -442,7 +462,8 @@
       "Don't use radii above 12px except the hero status pill.",
       "Don't add scroll reveals, parallax, or ambient motion. Motion belongs to live data and state changes.",
       "Don't set body paragraphs in mono or terminal labels in sans.",
-      "Don't invent testimonials, user counts, benchmarks, or product claims."
+      "Don't invent testimonials, user counts, benchmarks, or product claims.",
+      "Don't advertise TUI shortcuts as working web controls."
     ]
   }
 }

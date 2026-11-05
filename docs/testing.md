@@ -191,8 +191,13 @@ Then load the built site in a browser at 1440px, 1920px, 1200px, and
   below it;
 - rail and top-nav links track the section in view;
 - all six preview modes switch with `h` / `l`;
-- the shortcut dialog opens with `?`;
+- `simulate call` holds playback until `end call`, and every status surface
+  (rail, terminal, signal, now playing) follows the change;
+- the shortcut dialog opens with `?` and is labeled as app-only;
+- screenshot buttons open the full-size lightbox and Escape closes it;
 - FAQ rows open and close;
+- the install copy button copies all three command lines;
+- every primary action says Install and points to the install section;
 - copy buttons show feedback;
 - the terminal remains readable and every action stays visible at 390px.
 
