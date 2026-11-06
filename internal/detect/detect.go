@@ -82,7 +82,7 @@ func AssessWithBypass(processes []Process, bypass []string, ownPIDs ...int) Asse
 		if _, isOurs := own[process.PID]; isOurs {
 			continue
 		}
-		if matchesBypass(process, patterns) {
+		if matchesBypass(process, patterns) || isSystemVoiceDaemon(process) {
 			continue
 		}
 		// Linux sound servers label system alerts with an event role. They
@@ -147,6 +147,17 @@ func isNotificationRole(role string) bool {
 	default:
 		return false
 	}
+}
+
+// isSystemVoiceDaemon reports whether a process is a macOS speech daemon.
+// corespeechd (Siri and voice trigger) opens the microphone whenever audio
+// plays through the built-in speakers, which is not a call. Without this, our
+// own playback would look like a call, hold itself, and restart in a loop.
+func isSystemVoiceDaemon(process Process) bool {
+	if process.Name != "corespeechd" {
+		return false
+	}
+	return process.Path == "" || strings.HasPrefix(process.Path, "/System/") || strings.HasPrefix(process.Path, "/usr/libexec/")
 }
 
 func matchesBypass(process Process, patterns []string) bool {

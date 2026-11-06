@@ -227,3 +227,15 @@ func TestBypassAlsoSilencesInput(t *testing.T) {
 		t.Fatalf("bypassed input activity = %v", got.Activity)
 	}
 }
+
+func TestAssessIgnoresSystemVoiceDaemon(t *testing.T) {
+	daemon := Process{PID: 1311, Name: "corespeechd", Path: "/System/Library/PrivateFrameworks/CoreSpeech.framework/corespeechd", Input: true}
+	if got := Assess([]Process{daemon}).Activity; got != Silence {
+		t.Fatalf("corespeechd input = %v, want silence", got)
+	}
+
+	imposter := Process{PID: 9, Name: "corespeechd", Path: "/Users/me/bin/corespeechd", Input: true}
+	if got := Assess([]Process{imposter}).Activity; got != Call {
+		t.Fatalf("non-system corespeechd = %v, want call", got)
+	}
+}
