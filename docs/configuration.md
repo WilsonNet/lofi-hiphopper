@@ -40,6 +40,7 @@ lofi-hiphopper -config ./radio.yaml
 | `volume` | `55` | Use the value, including `0` |
 | `volume_step` | `5` | Use the value |
 | `poll_interval` | `500ms` | Use the value |
+| `yield_delay` | `3s` | Use the value, including `0s` |
 | `autofill` | `true` | Use the value, including `false` |
 | `hold_mode` | `stop` | `stop`, `pause`, or `mute` |
 | `bypass_apps` | `[]` | Replace the list of ignored apps |
@@ -67,9 +68,21 @@ Integer `1`-`25`. One keyboard volume press or one wheel notch.
 ### `poll_interval`
 
 Duration string. How often the audio probe runs (CoreAudio on macOS,
-`pw-dump` or `pactl` on Linux). Range:
-`250ms`-`30s`. Calls are detected on the next probe; other audio needs two
-consecutive samples.
+`pw-dump` or `pactl` on Linux). Range: `250ms`-`30s`. Calls are detected on the
+next probe; other audio must persist for `yield_delay` before playback is held.
+
+### `yield_delay`
+
+Duration string. How long another app must keep producing sound before lofi
+yields. This filters notification pings and other short alerts: the music keeps
+playing through them. Range: `0s`-`30s`. `0s` yields as soon as other audio is
+seen. Calls ignore this delay and hold playback immediately. On Linux, streams
+whose `media.role` is `Notification` or `event` are ignored even if they last
+longer.
+
+```yaml
+yield_delay: 3s
+```
 
 ### `autofill`
 
@@ -209,6 +222,7 @@ published release binaries self-update.
 volume: 55
 volume_step: 5
 poll_interval: 500ms
+yield_delay: 3s
 autofill: true
 hold_mode: stop
 bypass_apps: []

@@ -14,6 +14,7 @@ type Process struct {
 	Name     string
 	BundleID string
 	Path     string
+	Role     string
 	Input    bool
 	Output   bool
 }
@@ -84,6 +85,11 @@ func AssessWithBypass(processes []Process, bypass []string, ownPIDs ...int) Asse
 		if matchesBypass(process, patterns) {
 			continue
 		}
+		// Linux sound servers label system alerts with an event role. They
+		// must not hold playback, but a stream that also records stays a call.
+		if process.Output && !process.Input && isNotificationRole(process.Role) {
+			continue
+		}
 		label := processLabel(process)
 		if process.Input {
 			calls[label] = struct{}{}
@@ -130,6 +136,17 @@ func sortedKeys(set map[string]struct{}) []string {
 		return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
 	})
 	return keys
+}
+
+// isNotificationRole reports whether a stream carries a Linux notification
+// role. PipeWire uses "Notification"; libcanberra event sounds use "event".
+func isNotificationRole(role string) bool {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "notification", "event":
+		return true
+	default:
+		return false
+	}
 }
 
 func matchesBypass(process Process, patterns []string) bool {

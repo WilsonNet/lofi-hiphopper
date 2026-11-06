@@ -1,6 +1,9 @@
 package detect
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 const pwDumpFixture = `[
   {"id": 30, "type": "PipeWire:Interface:Node", "info": {"state": "running", "props": {"media.class": "Audio/Sink", "node.name": "alsa_output"}}},
@@ -70,6 +73,40 @@ func TestParsePipeWireDumpErrors(t *testing.T) {
 	processes, err := ParsePipeWireDump([]byte("[]"))
 	if err != nil || len(processes) != 0 {
 		t.Fatalf("empty dump = %v, %v", processes, err)
+	}
+}
+
+func TestParsePipeWireDumpKeepsMediaRole(t *testing.T) {
+	dump := `[
+	  {"id": 1, "type": "PipeWire:Interface:Client", "info": {"props": {"application.name": "Notifications", "application.process.id": 70, "pipewire.sec.pid": 70}}},
+	  {"id": 2, "type": "PipeWire:Interface:Node", "info": {"state": "running", "props": {"media.class": "Stream/Output/Audio", "client.id": 1, "media.role": "Notification"}}}
+	]`
+	processes, err := ParsePipeWireDump([]byte(dump))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(processes) != 1 || processes[0].Role != "Notification" {
+		t.Fatalf("processes = %+v", processes)
+	}
+	if got := Assess(processes).Activity; got != Silence {
+		t.Fatalf("activity = %v, want silence for a notification stream", got)
+	}
+}
+
+func TestParsePulseStreamsKeepsMediaRole(t *testing.T) {
+	sinks := `[
+	  {"index": 1, "corked": false, "properties": {"application.name": "libcanberra", "application.process.id": "900", "media.role": "event"}},
+	  {"index": 2, "corked": false, "properties": {"application.name": "Firefox", "application.process.id": "901", "media.role": "video"}}
+	]`
+	processes, err := ParsePulseStreams([]byte(sinks), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(processes) != 2 || processes[0].Role != "event" || processes[1].Role != "video" {
+		t.Fatalf("processes = %+v", processes)
+	}
+	if got := Assess(processes); got.Activity != OtherAudio || !reflect.DeepEqual(got.AudioApps, []string{"Firefox"}) {
+		t.Fatalf("assessment = %+v", got)
 	}
 }
 

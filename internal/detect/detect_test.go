@@ -3,6 +3,7 @@ package detect
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestAssessSilenceIgnoresOwnPlayer(t *testing.T) {
@@ -64,70 +65,135 @@ func TestAssessFallsBackToBundleOrPID(t *testing.T) {
 	}
 }
 
+func TestAssessIgnoresLinuxNotificationRoles(t *testing.T) {
+	got := Assess([]Process{
+		{PID: 1, Name: "Notifications", Role: "Notification", Output: true},
+		{PID: 2, Name: "libcanberra", Role: "event", Output: true},
+		{PID: 3, Name: "Spotify", Role: "Music", Output: true},
+	})
+	if got.Activity != OtherAudio {
+		t.Fatalf("activity = %v, want other audio", got.Activity)
+	}
+	if !reflect.DeepEqual(got.AudioApps, []string{"Spotify"}) {
+		t.Fatalf("audio apps = %v, want only Spotify", got.AudioApps)
+	}
+}
+
+func TestAssessNotificationRoleWithInputStaysCall(t *testing.T) {
+	got := Assess([]Process{
+		{PID: 1, Name: "Alert call", Role: "Notification", Input: true, Output: true},
+	})
+	if got.Activity != Call {
+		t.Fatalf("activity = %v, want call", got.Activity)
+	}
+}
+
 func TestTrackerStartupIsImmediate(t *testing.T) {
-	tracker := NewTracker()
-	if got := tracker.Observe(Silence); got != Silence {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	if got := tracker.ObserveAt(Silence, at); got != Silence {
 		t.Fatalf("startup silence = %v", got)
 	}
 	tracker.Reset()
-	if got := tracker.Observe(OtherAudio); got != OtherAudio {
+	if got := tracker.ObserveAt(OtherAudio, at); got != OtherAudio {
 		t.Fatalf("startup other = %v", got)
 	}
 }
 
 func TestTrackerCallIsImmediateAndHeld(t *testing.T) {
-	tracker := NewTracker()
-	tracker.Observe(Silence)
-	if got := tracker.Observe(Call); got != Call {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	if got := tracker.ObserveAt(Call, at.Add(time.Second)); got != Call {
 		t.Fatalf("call = %v, want call", got)
 	}
 	// A single quiet sample after a call should not resume playback.
-	if got := tracker.Observe(Silence); got != Call {
+	if got := tracker.ObserveAt(Silence, at.Add(2*time.Second)); got != Call {
 		t.Fatalf("call + 1 silence = %v, want call", got)
 	}
-	if got := tracker.Observe(Silence); got != Silence {
+	if got := tracker.ObserveAt(Silence, at.Add(3*time.Second)); got != Silence {
 		t.Fatalf("call + 2 silence = %v, want silence", got)
 	}
 }
 
-func TestTrackerDebouncesNotificationPing(t *testing.T) {
-	tracker := NewTracker()
-	tracker.Observe(Silence)
-	tracker.Observe(OtherAudio)
-	if got := tracker.Observe(Silence); got != Silence {
-		t.Fatalf("single ping changed state: %v", got)
+func TestTrackerNotificationPingIsIgnored(t *testing.T) {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	if got := tracker.ObserveAt(OtherAudio, at.Add(time.Second)); got != Silence {
+		t.Fatalf("first ping sample changed state: %v", got)
+	}
+	if got := tracker.ObserveAt(OtherAudio, at.Add(2*time.Second)); got != Silence {
+		t.Fatalf("short alert changed state: %v", got)
+	}
+	if got := tracker.ObserveAt(Silence, at.Add(2500*time.Millisecond)); got != Silence {
+		t.Fatalf("alert tail changed state: %v", got)
 	}
 	if got := tracker.State(); got != Silence {
 		t.Fatalf("state = %v, want silence", got)
 	}
 }
 
+func TestTrackerGraceResetsAfterAnAudioGap(t *testing.T) {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	tracker.ObserveAt(OtherAudio, at.Add(time.Second))
+	tracker.ObserveAt(OtherAudio, at.Add(3*time.Second))
+	if got := tracker.ObserveAt(Silence, at.Add(3500*time.Millisecond)); got != Silence {
+		t.Fatalf("gap should keep silence, got %v", got)
+	}
+	if got := tracker.ObserveAt(OtherAudio, at.Add(4*time.Second)); got != Silence {
+		t.Fatalf("gap did not reset the grace timer: %v", got)
+	}
+	if got := tracker.ObserveAt(OtherAudio, at.Add(7*time.Second)); got != OtherAudio {
+		t.Fatalf("sustained audio after reset = %v, want other", got)
+	}
+}
+
 func TestTrackerSustainedAudioWins(t *testing.T) {
-	tracker := NewTracker()
-	tracker.Observe(Silence)
-	tracker.Observe(OtherAudio)
-	if got := tracker.Observe(OtherAudio); got != OtherAudio {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	tracker.ObserveAt(OtherAudio, at.Add(time.Second))
+	if got := tracker.ObserveAt(OtherAudio, at.Add(3*time.Second)); got != Silence {
+		t.Fatalf("audio yielded before the grace period: %v", got)
+	}
+	if got := tracker.ObserveAt(OtherAudio, at.Add(4*time.Second)); got != OtherAudio {
 		t.Fatalf("sustained audio = %v, want other", got)
 	}
-	if got := tracker.Observe(Silence); got != OtherAudio {
+	if got := tracker.ObserveAt(Silence, at.Add(4500*time.Millisecond)); got != OtherAudio {
 		t.Fatalf("one gap resumed too soon: %v", got)
 	}
-	if got := tracker.Observe(Silence); got != Silence {
+	if got := tracker.ObserveAt(Silence, at.Add(5*time.Second)); got != Silence {
 		t.Fatalf("two gaps = %v, want silence", got)
 	}
 }
 
 func TestTrackerCallInterruptsAnyState(t *testing.T) {
-	tracker := NewTracker()
-	tracker.Observe(Silence)
-	tracker.Observe(OtherAudio)
-	tracker.Observe(OtherAudio)
-	if got := tracker.Observe(Call); got != Call {
+	tracker := NewTracker(3 * time.Second)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	tracker.ObserveAt(OtherAudio, at.Add(time.Second))
+	tracker.ObserveAt(OtherAudio, at.Add(4*time.Second))
+	if got := tracker.ObserveAt(Call, at.Add(5*time.Second)); got != Call {
 		t.Fatalf("call = %v", got)
 	}
-	tracker.Observe(OtherAudio)
-	if got := tracker.Observe(OtherAudio); got != OtherAudio {
+	tracker.ObserveAt(OtherAudio, at.Add(6*time.Second))
+	if got := tracker.ObserveAt(OtherAudio, at.Add(7*time.Second)); got != Call {
+		t.Fatalf("post-call audio should still be inside grace: %v", got)
+	}
+	if got := tracker.ObserveAt(OtherAudio, at.Add(9*time.Second)); got != OtherAudio {
 		t.Fatalf("post-call sustained audio = %v", got)
+	}
+}
+
+func TestTrackerZeroGraceYieldsOnFirstSample(t *testing.T) {
+	tracker := NewTracker(0)
+	at := time.Unix(100, 0)
+	tracker.ObserveAt(Silence, at)
+	if got := tracker.ObserveAt(OtherAudio, at.Add(time.Second)); got != OtherAudio {
+		t.Fatalf("zero grace = %v, want other", got)
 	}
 }
 

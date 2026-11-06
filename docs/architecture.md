@@ -116,8 +116,17 @@ path), then classifies:
 The bypass list is for simulator/helper audio that should never interrupt lofi.
 It applies to both output and input, so list only apps you trust to ignore.
 
-`Tracker` debounces output/silence transitions for two samples. A call is
-immediate. This is what prevents notification pings from pausing the music.
+`Tracker` debounces output/silence transitions. Other audio must persist for
+`yield_delay` (3 seconds by default) before playback is held, which filters
+notification pings. A call is immediate.
+
+macOS does not expose a public "this stream is a notification" flag. App alerts
+are played by the app itself, and system alert sounds are not reliably reported
+as a separate process, so there is no dependable process-level filter there.
+Linux stream metadata does expose a role: PipeWire uses
+`media.role=Notification` and Pulse/libcanberra event streams use
+`media.role=event`, so the Linux probe ignores those streams. The timer remains
+the portable fallback for app alerts that do not set a role.
 
 The app never records audio. It only reads process flags and stream metadata.
 

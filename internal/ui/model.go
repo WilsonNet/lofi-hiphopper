@@ -186,7 +186,7 @@ func New(cfg config.Config, deps Deps, options Options) *Model {
 		muted:        false,
 		viz:          NewVisualizer(),
 		now:          time.Now(),
-		tracker:      detect.NewTracker(),
+		tracker:      detect.NewTracker(cfg.Yield()),
 		retryBackoff: minRetry,
 	}
 	if options.ConfigPath == "" {
@@ -658,9 +658,15 @@ func (m *Model) handleDetection(message detectionMsg) tea.Cmd {
 	}
 	assessment := detect.AssessWithBypass(message.processes, m.cfg.BypassApps, ownPID)
 	m.assessment = assessment
-	m.activity = m.tracker.Observe(assessment.Activity)
+	m.activity = m.tracker.ObserveAt(assessment.Activity, m.now)
 	m.ready = true
 	return m.sync()
+}
+
+// silentNow reports whether both the raw probe sample and the debounced state
+// agree that nothing else is using audio.
+func (m *Model) silentNow() bool {
+	return m.activity == detect.Silence && m.assessment.Activity == detect.Silence
 }
 
 func (m *Model) sync() tea.Cmd {
@@ -694,6 +700,11 @@ func (m *Model) sync() tea.Cmd {
 		}
 		return nil
 	case detect.Silence:
+		// The tracker may still report silence while other audio is inside
+		// its notification grace window. Never start or resume into that.
+		if !m.silentNow() {
+			return nil
+		}
 		if m.state == stateSuspended {
 			if m.autofill || m.resumeOnSilence {
 				return m.resume()
@@ -1089,10 +1100,10 @@ drained:
 	if m.state == statePlaying && snapshot.Running && snapshot.Idle && m.now.Sub(m.lastPlayAt) > 4*time.Second {
 		cmd = m.streamLost("stream ended")
 	}
-	if m.state == stateRetrying && m.ready && m.activity == detect.Silence && (m.autofill || m.resumeOnSilence) && !m.now.Before(m.retryAt) {
+	if m.state == stateRetrying && m.ready && m.silentNow() && (m.autofill || m.resumeOnSilence) && !m.now.Before(m.retryAt) {
 		cmd = m.startTune(m.current, "retry")
 	}
-	if m.state == stateIdle && m.ready && m.activity == detect.Silence && (m.autofill || m.resumeOnSilence) && m.current >= 0 && !m.now.Before(m.retryAt) {
+	if m.state == stateIdle && m.ready && m.silentNow() && (m.autofill || m.resumeOnSilence) && m.current >= 0 && !m.now.Before(m.retryAt) {
 		cmd = m.startTune(m.current, "silence")
 	}
 	return cmd

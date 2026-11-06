@@ -211,10 +211,13 @@ When the window is narrow, the UI still works:
 On macOS it uses CoreAudio process flags to see which apps are producing
 output or using a microphone. On Linux it reads PipeWire stream nodes with
 `pw-dump` (or PulseAudio streams with `pactl`): a running playback stream is
-other audio, a running capture stream is a call. A separate silent ffmpeg decode feeds the visualizers, while
-mpv handles playback. While yielding it stops the stream by default and resolves
-it again when silence returns. Set `hold_mode: mute` to keep streaming silently,
-or `hold_mode: pause` to pause. It never records your microphone.
+other audio, a running capture stream is a call. Notification pings are ignored
+on both platforms: other audio must last for `yield_delay` (3 seconds by
+default) before lofi yields. A separate silent ffmpeg decode feeds the
+visualizers, while mpv handles playback. While yielding it stops the stream by
+default and resolves it again when silence returns. Set `hold_mode: mute` to
+keep streaming silently, or `hold_mode: pause` to pause. It never records your
+microphone.
 
 For the deep version, read:
 

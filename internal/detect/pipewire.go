@@ -71,6 +71,7 @@ func ParsePipeWireDump(data []byte) ([]Process, error) {
 			Name:     firstString(props, client, "application.name", "node.name"),
 			BundleID: firstString(props, client, "application.id", "pipewire.access.portal.app_id", "pipewire.access.flatpak.app_id"),
 			Path:     firstString(props, client, "application.process.binary"),
+			Role:     firstString(props, client, "media.role"),
 			Input:    class == pwInputStream,
 			Output:   class == pwOutputStream,
 		}
@@ -117,6 +118,7 @@ func ParsePulseStreams(sinkInputs, sourceOutputs []byte) ([]Process, error) {
 				Name:     firstString(props, nil, "application.name", "media.name"),
 				BundleID: firstString(props, nil, "application.id", "pipewire.access.portal.app_id"),
 				Path:     firstString(props, nil, "application.process.binary"),
+				Role:     propString(props, "media.role"),
 				Input:    part.input,
 				Output:   !part.input,
 			})

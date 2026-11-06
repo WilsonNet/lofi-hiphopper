@@ -275,6 +275,7 @@ curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/insta
               <pre class="code-block config-block" aria-label="Optional configuration example"><code><span class="code-comment"># optional overrides; everything else stays default</span>
 volume: 35
 hold_mode: stop      <span class="code-comment"># stop | pause | mute</span>
+yield_delay: 3s      <span class="code-comment"># ignore short notification pings</span>
 
 bypass_apps:
   - "CoreSimulator"
@@ -303,6 +304,10 @@ shortcuts:
             <details>
               <summary>What happens during a Zoom or Meet call?</summary>
               <p>Any app with an active microphone stream holds playback immediately. With the default <code>hold_mode: stop</code>, the stream stops and re-resolves when the call ends. <code>pause</code> and <code>mute</code> are opt-in alternatives.</p>
+            </details>
+            <details>
+              <summary>Do notification sounds stop the music?</summary>
+              <p>No. Other audio must keep playing for <code>yield_delay</code> (3 seconds by default) before lofi yields, so short notification pings are ignored. A call still holds playback immediately.</p>
             </details>
             <details>
               <summary>Why does it say “waiting for silence”?</summary>

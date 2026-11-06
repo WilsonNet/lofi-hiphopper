@@ -23,6 +23,9 @@ func TestDefaultIsValid(t *testing.T) {
 	if cfg.Volume != 55 || cfg.Poll() != DefaultPollInterval || !cfg.Autofill {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
+	if cfg.Yield() != DefaultYieldDelay {
+		t.Fatalf("yield delay = %s, want %s", cfg.Yield(), DefaultYieldDelay)
+	}
 	if cfg.HoldMode != DefaultHoldMode {
 		t.Fatalf("hold mode = %q, want %q", cfg.HoldMode, DefaultHoldMode)
 	}
@@ -47,7 +50,7 @@ func TestLoadMissingUsesDefaultsWithoutCreatingFile(t *testing.T) {
 }
 
 func TestDefaultYAMLIsExportable(t *testing.T) {
-	if !strings.Contains(DefaultYAML(), "poll_interval: 500ms") || !strings.Contains(DefaultYAML(), "shortcuts:") {
+	if !strings.Contains(DefaultYAML(), "poll_interval: 500ms") || !strings.Contains(DefaultYAML(), "yield_delay: 3s") || !strings.Contains(DefaultYAML(), "shortcuts:") {
 		t.Fatal("default YAML is missing expected sections")
 	}
 }
@@ -98,6 +101,7 @@ radios:
 func TestDurationParsing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	body := `poll_interval: 1500ms
+yield_delay: 750ms
 radios:
   - name: One
     url: https://example.com/stream
@@ -111,6 +115,25 @@ radios:
 	}
 	if got := cfg.Poll(); got != 1500*time.Millisecond {
 		t.Fatalf("poll = %s, want 1.5s", got)
+	}
+	if got := cfg.Yield(); got != 750*time.Millisecond {
+		t.Fatalf("yield = %s, want 750ms", got)
+	}
+}
+
+func TestZeroYieldDelayDisablesGrace(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `yield_delay: 0s
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.Yield(); got != 0 {
+		t.Fatalf("yield = %s, want zero", got)
 	}
 }
 
@@ -126,6 +149,8 @@ func TestValidation(t *testing.T) {
 		{"volume low", func(c *Config) { c.Volume = -1 }, "volume"},
 		{"poll too fast", func(c *Config) { c.PollInterval = Duration(10 * time.Millisecond) }, "poll_interval"},
 		{"poll too slow", func(c *Config) { c.PollInterval = Duration(time.Minute) }, "poll_interval"},
+		{"yield negative", func(c *Config) { c.YieldDelay = Duration(-time.Second) }, "yield_delay"},
+		{"yield too slow", func(c *Config) { c.YieldDelay = Duration(31 * time.Second) }, "yield_delay"},
 		{"empty name", func(c *Config) { c.Radios[0].Name = "  " }, "name is empty"},
 		{"empty url", func(c *Config) { c.Radios[0].URL = "" }, "url is empty"},
 		{"bad scheme", func(c *Config) { c.Radios[0].URL = "file:///tmp/x" }, "http(s)"},
@@ -213,6 +238,9 @@ autofill: false
 	}
 	if cfg.Poll() != DefaultPollInterval {
 		t.Errorf("poll = %s, want default", cfg.Poll())
+	}
+	if cfg.Yield() != DefaultYieldDelay {
+		t.Errorf("yield = %s, want default", cfg.Yield())
 	}
 	if len(cfg.Radios) != len(DefaultRadios()) {
 		t.Errorf("radios = %d, want defaults", len(cfg.Radios))

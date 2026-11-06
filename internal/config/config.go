@@ -20,6 +20,9 @@ const (
 	DefaultVolumeStep = 5
 	// DefaultPollInterval is how often the audio activity probe runs.
 	DefaultPollInterval = 500 * time.Millisecond
+	// DefaultYieldDelay is how long other audio must last before lofi yields.
+	// It filters notification pings, which are usually shorter than this.
+	DefaultYieldDelay = 3 * time.Second
 	// DefaultHoldMode keeps the stream alive but muted while yielding.
 	DefaultHoldMode = "stop"
 	appDir          = "lofi-hiphopper"
@@ -71,6 +74,7 @@ type Config struct {
 	Volume       int        `yaml:"volume"`
 	VolumeStep   int        `yaml:"volume_step"`
 	PollInterval Duration   `yaml:"poll_interval"`
+	YieldDelay   Duration   `yaml:"yield_delay"`
 	Autofill     bool       `yaml:"autofill"`
 	HoldMode     string     `yaml:"hold_mode"`
 	BypassApps   []string   `yaml:"bypass_apps"`
@@ -177,6 +181,7 @@ func Default() Config {
 		Volume:       DefaultVolume,
 		VolumeStep:   DefaultVolumeStep,
 		PollInterval: Duration(DefaultPollInterval),
+		YieldDelay:   Duration(DefaultYieldDelay),
 		Autofill:     true,
 		HoldMode:     DefaultHoldMode,
 		BypassApps:   []string{},
@@ -194,6 +199,10 @@ volume: 55
 volume_step: 5
 poll_interval: 500ms
 autofill: true
+
+# How long another app must keep playing before lofi yields. This filters
+# short notification sounds. Calls are always immediate.
+yield_delay: 3s
 
 # While yielding to a call or other audio:
 #   stop  = stop the stream and resolve it again on return (default)
@@ -334,6 +343,10 @@ func (c *Config) Validate() error {
 	if interval < 250*time.Millisecond || interval > 30*time.Second {
 		return fmt.Errorf("poll_interval must be between 250ms and 30s (got %s)", interval)
 	}
+	yieldDelay := time.Duration(c.YieldDelay)
+	if yieldDelay < 0 || yieldDelay > 30*time.Second {
+		return fmt.Errorf("yield_delay must be between 0s and 30s (got %s)", yieldDelay)
+	}
 	if len(c.Radios) == 0 {
 		return errors.New("radios must contain at least one entry")
 	}
@@ -395,6 +408,11 @@ func (c Config) Poll() time.Duration {
 		return DefaultPollInterval
 	}
 	return time.Duration(c.PollInterval)
+}
+
+// Yield returns how long other audio must persist before playback is held.
+func (c Config) Yield() time.Duration {
+	return time.Duration(c.YieldDelay)
 }
 
 // normalizeShortcuts keeps built-in bindings for actions the user did not

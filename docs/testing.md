@@ -85,6 +85,7 @@ Use a temporary config with a low volume:
 ```yaml
 volume: 10
 poll_interval: 500ms
+yield_delay: 3s
 autofill: true
 radios:
   - name: Lofi Girl · lofi hip hop radio
@@ -99,6 +100,14 @@ radios:
 2. Start the app.
 3. Wait for `FILLING`, `spectrum live`, and moving bars.
 4. Confirm mpv and ffmpeg child processes exist.
+
+**Notification alert**
+
+1. Start the app with lofi playing.
+2. Play a short system sound, for example
+   `afplay /System/Library/Sounds/Glass.aiff`.
+3. The pane must keep playing and must not show `STOPPED`/`PAUSED`.
+4. Play a sustained sound for longer than `yield_delay`; the app must yield.
 
 **Yield and recovery**
 

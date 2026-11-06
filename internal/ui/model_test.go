@@ -317,6 +317,43 @@ func TestDefaultStopHoldStopsAndResolvesAgain(t *testing.T) {
 	}
 }
 
+func TestNotificationGraceKeepsPlayback(t *testing.T) {
+	rig := newRig(t)
+	rig.startPlayback(t)
+	rig.player.resetCalls()
+
+	base := rig.model.now
+	alert := detect.Process{PID: 9, Name: "Slack", BundleID: "com.tinyspeck.slackmacgap", Output: true}
+	rig.model.now = base.Add(500 * time.Millisecond)
+	if cmd := rig.detect(alert); cmd != nil {
+		t.Fatalf("notification alert produced a command: %T", cmd())
+	}
+	rig.model.now = base.Add(1500 * time.Millisecond)
+	if cmd := rig.detect(alert); cmd != nil {
+		t.Fatalf("short alert produced a command: %T", cmd())
+	}
+	if rig.model.state != statePlaying {
+		t.Fatalf("state = %v, want playing during alert", rig.model.state)
+	}
+	if rig.player.hasCall("stop") || rig.player.hasCall("pause") || rig.player.hasCall("mute") {
+		t.Fatalf("notification alert changed playback: %v", rig.player.calls)
+	}
+
+	// Audio that keeps going past the grace window is real playback and holds.
+	rig.model.now = base.Add(4 * time.Second)
+	cmd := rig.detect(alert)
+	if cmd == nil {
+		t.Fatal("sustained audio did not yield after grace")
+	}
+	_ = runCommand(cmd)
+	if rig.model.state != stateSuspended || rig.model.pauseReason != "audio" {
+		t.Fatalf("state/reason = %v/%q", rig.model.state, rig.model.pauseReason)
+	}
+	if !rig.player.hasCall("stop") {
+		t.Fatalf("default stop hold did not stop mpv: %v", rig.player.calls)
+	}
+}
+
 func TestMuteHoldModeKeepsStreamAndRestoresUserMute(t *testing.T) {
 	cfg := config.Default()
 	cfg.HoldMode = "mute"
