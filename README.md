@@ -70,7 +70,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.4.2
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.5.0
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -151,6 +151,9 @@ Switch with `h` / `l` or the mouse. The current names are:
 - **HALO** — circular polar spectrum with a pulsing core
 - **AURORA** — layered spectrum clouds under a star field
 - **MATRIX** — dot-matrix equalizer with a scanline
+
+The app starts on **BARS** by default. Set `visualizer: mirror` (or `scope`,
+`halo`, `aurora`, `matrix`) in your config to pick a different starting view.
 
 *Screenshots are real demo-mode frames rendered with Charm freeze.*
 

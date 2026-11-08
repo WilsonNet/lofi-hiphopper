@@ -19,7 +19,7 @@ import Base from "../layouts/Base.astro";
       </nav>
       <div class="header-actions">
         <a class="header-github" href="https://github.com/WilsonNet/lofi-hiphopper">github ↗</a>
-        <span class="header-meta">v0.4.2 · macOS · Linux</span>
+        <span class="header-meta">v0.5.0 · macOS · Linux</span>
         <a class="header-install" href="#install">install <span aria-hidden="true">↵</span></a>
       </div>
     </header>
@@ -274,6 +274,7 @@ curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/insta
               <div class="command-line"><span class="prompt">$</span> lofi-hiphopper -print-config</div>
               <pre class="code-block config-block" aria-label="Optional configuration example"><code><span class="code-comment"># optional overrides; everything else stays default</span>
 volume: 35
+visualizer: mirror   <span class="code-comment"># bars | mirror | scope | halo | aurora | matrix</span>
 hold_mode: stop      <span class="code-comment"># stop | pause | mute</span>
 yield_delay: 3s      <span class="code-comment"># ignore short notification pings</span>
 

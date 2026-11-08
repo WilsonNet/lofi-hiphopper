@@ -42,6 +42,7 @@ lofi-hiphopper -config ./radio.yaml
 | `poll_interval` | `500ms` | Use the value |
 | `yield_delay` | `3s` | Use the value, including `0s` |
 | `autofill` | `true` | Use the value, including `false` |
+| `visualizer` | `bars` | `bars`, `mirror`, `scope`, `halo`, `aurora`, or `matrix` |
 | `hold_mode` | `stop` | `stop`, `pause`, or `mute` |
 | `bypass_apps` | `[]` | Replace the list of ignored apps |
 | `radios` | Built-in Lofi Girl list | Replace the radio list |
@@ -89,6 +90,16 @@ yield_delay: 3s
 Boolean. When true, the first radio starts when the computer is silent and resumes
 after calls or other audio stop. When false, silence does not start playback
 automatically; calls still hold playback.
+
+### `visualizer`
+
+The visualizer shown when the app starts. Accepted names are `bars`, `mirror`,
+`scope`, `halo`, `aurora`, and `matrix`; matching is case-insensitive. Press
+`h` / `l` at any time to cycle from there.
+
+```yaml
+visualizer: mirror
+```
 
 ### `hold_mode`
 
@@ -224,6 +235,7 @@ volume_step: 5
 poll_interval: 500ms
 yield_delay: 3s
 autofill: true
+visualizer: bars
 hold_mode: stop
 bypass_apps: []
 
@@ -275,7 +287,8 @@ Invalid values fail at startup with a clear message. The app rejects:
 - volume outside `0`-`100`;
 - volume step outside `1`-`25`;
 - poll interval outside `250ms`-`30s`;
-- hold mode other than `mute` or `pause`;
+- a visualizer name other than `bars`, `mirror`, `scope`, `halo`, `aurora`, or `matrix`;
+- hold mode other than `stop`, `pause`, or `mute`;
 - an empty `bypass_apps` entry;
 - an empty radio list or duplicate URLs;
 - unknown shortcut actions;

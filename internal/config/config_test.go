@@ -29,6 +29,12 @@ func TestDefaultIsValid(t *testing.T) {
 	if cfg.HoldMode != DefaultHoldMode {
 		t.Fatalf("hold mode = %q, want %q", cfg.HoldMode, DefaultHoldMode)
 	}
+	if cfg.Visualizer != DefaultVisualizer {
+		t.Fatalf("visualizer = %q, want %q", cfg.Visualizer, DefaultVisualizer)
+	}
+	if DefaultVisualizer != "bars" {
+		t.Fatalf("default visualizer = %q, want bars", DefaultVisualizer)
+	}
 }
 
 func TestLoadMissingUsesDefaultsWithoutCreatingFile(t *testing.T) {
@@ -50,7 +56,7 @@ func TestLoadMissingUsesDefaultsWithoutCreatingFile(t *testing.T) {
 }
 
 func TestDefaultYAMLIsExportable(t *testing.T) {
-	if !strings.Contains(DefaultYAML(), "poll_interval: 500ms") || !strings.Contains(DefaultYAML(), "yield_delay: 3s") || !strings.Contains(DefaultYAML(), "shortcuts:") {
+	if !strings.Contains(DefaultYAML(), "poll_interval: 500ms") || !strings.Contains(DefaultYAML(), "yield_delay: 3s") || !strings.Contains(DefaultYAML(), "visualizer: bars") || !strings.Contains(DefaultYAML(), "shortcuts:") {
 		t.Fatal("default YAML is missing expected sections")
 	}
 }
@@ -76,6 +82,76 @@ func TestLoadAppliesDefaultsToOmittedFields(t *testing.T) {
 	}
 	if !cfg.Autofill {
 		t.Error("autofill should default to true")
+	}
+	if cfg.Visualizer != DefaultVisualizer {
+		t.Errorf("visualizer = %q, want %q", cfg.Visualizer, DefaultVisualizer)
+	}
+}
+
+func TestFullConfigKeepsExplicitValues(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	body := `volume: 12
+volume_step: 2
+poll_interval: 1s
+yield_delay: 0s
+autofill: false
+visualizer: halo
+hold_mode: pause
+bypass_apps: ["cava"]
+radios:
+  - name: One
+    url: https://example.com/stream
+shortcuts:
+  - action: mute
+    keys: ["x"]
+`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Volume != 12 || cfg.VolumeStep != 2 || cfg.Poll() != time.Second || cfg.Yield() != 0 {
+		t.Fatalf("numeric values not applied: %+v", cfg)
+	}
+	if cfg.Autofill || cfg.Visualizer != "halo" || cfg.HoldMode != "pause" {
+		t.Fatalf("boolean/string values not applied: %+v", cfg)
+	}
+	if len(cfg.BypassApps) != 1 || cfg.BypassApps[0] != "cava" {
+		t.Fatalf("bypass_apps = %v", cfg.BypassApps)
+	}
+	if len(cfg.Radios) != 1 || cfg.Radios[0].Name != "One" {
+		t.Fatalf("radios = %+v", cfg.Radios)
+	}
+}
+
+func TestVisualizerConfig(t *testing.T) {
+	for _, tt := range []struct {
+		value string
+		want  string
+	}{
+		{"bars", "bars"},
+		{"mirror", "mirror"},
+		{"  MIRROR  ", "mirror"},
+		{"Scope", "scope"},
+		{"halo", "halo"},
+		{"aurora", "aurora"},
+		{"matrix", "matrix"},
+	} {
+		t.Run(tt.value, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.yaml")
+			if err := os.WriteFile(path, []byte("visualizer: "+tt.value+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			cfg, err := Load(path)
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.Visualizer != tt.want {
+				t.Fatalf("visualizer = %q, want %q", cfg.Visualizer, tt.want)
+			}
+		})
 	}
 }
 
@@ -151,6 +227,8 @@ func TestValidation(t *testing.T) {
 		{"poll too slow", func(c *Config) { c.PollInterval = Duration(time.Minute) }, "poll_interval"},
 		{"yield negative", func(c *Config) { c.YieldDelay = Duration(-time.Second) }, "yield_delay"},
 		{"yield too slow", func(c *Config) { c.YieldDelay = Duration(31 * time.Second) }, "yield_delay"},
+		{"unknown visualizer", func(c *Config) { c.Visualizer = "spiral" }, "visualizer"},
+		{"empty visualizer", func(c *Config) { c.Visualizer = " " }, "visualizer"},
 		{"empty name", func(c *Config) { c.Radios[0].Name = "  " }, "name is empty"},
 		{"empty url", func(c *Config) { c.Radios[0].URL = "" }, "url is empty"},
 		{"bad scheme", func(c *Config) { c.Radios[0].URL = "file:///tmp/x" }, "http(s)"},
@@ -241,6 +319,9 @@ autofill: false
 	}
 	if cfg.Yield() != DefaultYieldDelay {
 		t.Errorf("yield = %s, want default", cfg.Yield())
+	}
+	if cfg.Visualizer != DefaultVisualizer {
+		t.Errorf("visualizer = %q, want default", cfg.Visualizer)
 	}
 	if len(cfg.Radios) != len(DefaultRadios()) {
 		t.Errorf("radios = %d, want defaults", len(cfg.Radios))

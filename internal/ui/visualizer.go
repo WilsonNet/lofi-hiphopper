@@ -2,6 +2,7 @@ package ui
 
 import (
 	"math"
+	"strings"
 
 	"github.com/wilsonpsn/lofi-hiphopper/internal/audio"
 )
@@ -64,6 +65,18 @@ func (v *Visualizer) SetMode(mode int) {
 	if mode >= 0 && mode < VisualizerCount {
 		v.Mode = mode
 	}
+}
+
+// SetModeByName selects a mode by its config name, case-insensitively.
+func (v *Visualizer) SetModeByName(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for mode, candidate := range visualizerNames {
+		if strings.ToLower(candidate) == name {
+			v.SetMode(mode)
+			return true
+		}
+	}
+	return false
 }
 
 // Name is the display name of the current mode.

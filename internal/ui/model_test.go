@@ -683,6 +683,20 @@ func TestViewAcrossSizes(t *testing.T) {
 	}
 }
 
+func TestConfiguredVisualizerStartsSelected(t *testing.T) {
+	cfg := config.Default()
+	cfg.Visualizer = "mirror"
+	model := New(cfg, Deps{}, Options{Demo: true})
+	if model.viz.Mode != ModeMirror {
+		t.Fatalf("mode = %d, want MIRROR", model.viz.Mode)
+	}
+	model.width = 120
+	model.height = 40
+	if text := plain(model.View()); !strings.Contains(text, "MIRROR") {
+		t.Fatalf("view does not show MIRROR: %q", text)
+	}
+}
+
 func TestViewNonDemo(t *testing.T) {
 	rig := newRig(t)
 	view := rig.model.View()

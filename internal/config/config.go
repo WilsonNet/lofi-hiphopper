@@ -25,8 +25,18 @@ const (
 	DefaultYieldDelay = 3 * time.Second
 	// DefaultHoldMode keeps the stream alive but muted while yielding.
 	DefaultHoldMode = "stop"
-	appDir          = "lofi-hiphopper"
+	// DefaultVisualizer is the visualizer shown at startup.
+	DefaultVisualizer = "bars"
+	appDir            = "lofi-hiphopper"
 )
+
+// visualizerNames lists the accepted visualizer names in display order.
+var visualizerNames = []string{"bars", "mirror", "scope", "halo", "aurora", "matrix"}
+
+// VisualizerNames returns the accepted visualizer names in display order.
+func VisualizerNames() []string {
+	return append([]string(nil), visualizerNames...)
+}
 
 // Duration exists so YAML can say "1s" instead of nanoseconds.
 type Duration time.Duration
@@ -77,6 +87,7 @@ type Config struct {
 	YieldDelay   Duration   `yaml:"yield_delay"`
 	Autofill     bool       `yaml:"autofill"`
 	HoldMode     string     `yaml:"hold_mode"`
+	Visualizer   string     `yaml:"visualizer"`
 	BypassApps   []string   `yaml:"bypass_apps"`
 	Radios       []Radio    `yaml:"radios"`
 	Shortcuts    []Shortcut `yaml:"shortcuts"`
@@ -184,6 +195,7 @@ func Default() Config {
 		YieldDelay:   Duration(DefaultYieldDelay),
 		Autofill:     true,
 		HoldMode:     DefaultHoldMode,
+		Visualizer:   DefaultVisualizer,
 		BypassApps:   []string{},
 		Radios:       DefaultRadios(),
 		Shortcuts:    DefaultShortcuts(),
@@ -199,6 +211,9 @@ volume: 55
 volume_step: 5
 poll_interval: 500ms
 autofill: true
+
+# The visualizer shown at startup: bars, mirror, scope, halo, aurora, or matrix.
+visualizer: bars
 
 # How long another app must keep playing before lofi yields. This filters
 # short notification sounds. Calls are always immediate.
@@ -339,6 +354,10 @@ func (c *Config) Validate() error {
 	if c.HoldMode != "stop" && c.HoldMode != "pause" && c.HoldMode != "mute" {
 		return fmt.Errorf("hold_mode must be \"stop\", \"pause\", or \"mute\" (got %q)", c.HoldMode)
 	}
+	c.Visualizer = strings.ToLower(strings.TrimSpace(c.Visualizer))
+	if !validVisualizer(c.Visualizer) {
+		return fmt.Errorf("visualizer must be one of %s (got %q)", strings.Join(visualizerNames, ", "), c.Visualizer)
+	}
 	interval := time.Duration(c.PollInterval)
 	if interval < 250*time.Millisecond || interval > 30*time.Second {
 		return fmt.Errorf("poll_interval must be between 250ms and 30s (got %s)", interval)
@@ -400,6 +419,15 @@ func (c *Config) Validate() error {
 		seen[radio.URL] = i
 	}
 	return nil
+}
+
+func validVisualizer(name string) bool {
+	for _, candidate := range visualizerNames {
+		if name == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 // Poll returns the probe interval as a standard duration.

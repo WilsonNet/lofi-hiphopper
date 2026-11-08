@@ -189,6 +189,7 @@ func New(cfg config.Config, deps Deps, options Options) *Model {
 		tracker:      detect.NewTracker(cfg.Yield()),
 		retryBackoff: minRetry,
 	}
+	m.viz.SetModeByName(cfg.Visualizer)
 	if options.ConfigPath == "" {
 		m.configPath = config.Path()
 	} else {

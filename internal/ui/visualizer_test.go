@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/wilsonpsn/lofi-hiphopper/internal/audio"
+	"github.com/wilsonpsn/lofi-hiphopper/internal/config"
 )
 
 func populatedVisualizer() *Visualizer {
@@ -50,6 +51,31 @@ func TestVisualizerCyclesAllModes(t *testing.T) {
 	v.SetMode(999)
 	if v.Mode != ModeBars {
 		t.Fatalf("invalid SetMode changed mode to %d", v.Mode)
+	}
+}
+
+func TestVisualizerSetModeByName(t *testing.T) {
+	v := NewVisualizer()
+	if !v.SetModeByName("mirror") || v.Mode != ModeMirror {
+		t.Fatalf("mirror mode = %d, set = %v", v.Mode, v.Mode == ModeMirror)
+	}
+	if !v.SetModeByName("  AURORA ") || v.Mode != ModeAurora {
+		t.Fatalf("aurora mode = %d", v.Mode)
+	}
+	if v.SetModeByName("spiral") || v.Mode != ModeAurora {
+		t.Fatalf("invalid name changed mode to %d", v.Mode)
+	}
+}
+
+func TestVisualizerNamesMatchConfig(t *testing.T) {
+	names := config.VisualizerNames()
+	if len(names) != len(visualizerNames) {
+		t.Fatalf("config has %d visualizer names, UI has %d", len(names), len(visualizerNames))
+	}
+	for i, name := range names {
+		if strings.ToLower(visualizerNames[i]) != name {
+			t.Fatalf("visualizer %d = %q, config name = %q", i, visualizerNames[i], name)
+		}
 	}
 }
 
