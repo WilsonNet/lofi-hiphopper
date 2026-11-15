@@ -17,6 +17,11 @@ type Process struct {
 	Role     string
 	Input    bool
 	Output   bool
+
+	// Ancestors holds the names and executable paths of the parent chain,
+	// nearest first. Some apps play audio through a helper child (Anki uses
+	// mpv), so bypass entries match parents as well as the stream owner.
+	Ancestors []string
 }
 
 // Activity is the raw, undebounced state of the machine.
@@ -59,7 +64,7 @@ func Assess(processes []Process, ownPIDs ...int) Assessment {
 
 // AssessWithBypass classifies a snapshot while ignoring processes matching the
 // bypass list. Patterns are case-insensitive substrings of process name, bundle
-// ID, or executable path.
+// ID, executable path, or an ancestor's name or path.
 func AssessWithBypass(processes []Process, bypass []string, ownPIDs ...int) Assessment {
 	own := make(map[int]struct{}, len(ownPIDs))
 	for _, pid := range ownPIDs {
@@ -164,10 +169,14 @@ func matchesBypass(process Process, patterns []string) bool {
 	if len(patterns) == 0 {
 		return false
 	}
-	values := []string{
+	values := make([]string, 0, 3+len(process.Ancestors))
+	values = append(values,
 		strings.ToLower(process.Name),
 		strings.ToLower(process.BundleID),
 		strings.ToLower(process.Path),
+	)
+	for _, ancestor := range process.Ancestors {
+		values = append(values, strings.ToLower(strings.TrimSpace(ancestor)))
 	}
 	for _, pattern := range patterns {
 		for _, value := range values {

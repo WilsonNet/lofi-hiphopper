@@ -123,7 +123,8 @@ real captured ANSI. Store in `docs/images/`.
 - macOS: `go test ./internal/detect -run TestCoreAudio -v` lists processes.
 - Linux: `go test ./internal/detect -run TestLinuxAudioProbe -v` lists active
   streams; `pw-dump | grep -A3 Stream/` shows the raw nodes.
-- Add the culprit to `bypass_apps` if it should never interrupt lofi.
+- Add the culprit or, on Linux, its parent app to `bypass_apps` if it should
+  never interrupt lofi.
 - Confirm the app's own mpv is excluded by PID.
 
 **Visualizer offline**

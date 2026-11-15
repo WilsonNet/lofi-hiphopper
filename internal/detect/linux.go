@@ -19,14 +19,20 @@ const linuxProbeTimeout = 3 * time.Second
 // Linux reads stream activity from PipeWire (pw-dump) and falls back to
 // PulseAudio (pactl). It never records audio; it only reads stream metadata.
 type Linux struct {
-	lookPath func(string) (string, error)
-	run      func(ctx context.Context, name string, args ...string) ([]byte, error)
-	exe      func(pid int) string
+	lookPath  func(string) (string, error)
+	run       func(ctx context.Context, name string, args ...string) ([]byte, error)
+	exe       func(pid int) string
+	ancestors func(pid int) []string
 }
 
 // New returns the Linux sound-server probe.
 func New() *Linux {
-	return &Linux{lookPath: exec.LookPath, run: runCommand, exe: procExe}
+	return &Linux{
+		lookPath:  exec.LookPath,
+		run:       runCommand,
+		exe:       procExe,
+		ancestors: procAncestors,
+	}
 }
 
 // Backend names the tool the probe uses, or "" when none is installed.
@@ -78,6 +84,9 @@ func (l *Linux) Processes() ([]Process, error) {
 		if path := l.exe(processes[i].PID); path != "" {
 			processes[i].Path = path
 		}
+		if l.ancestors != nil {
+			processes[i].Ancestors = l.ancestors(processes[i].PID)
+		}
 	}
 	return processes, nil
 }
@@ -105,6 +114,75 @@ func procExe(pid int) string {
 		return ""
 	}
 	return path
+}
+
+// maxAncestorDepth bounds a /proc walk so a process wedged into a deep helper
+// tree cannot turn every poll into an unbounded syscall chain.
+const maxAncestorDepth = 6
+
+// procAncestors returns the names and executable paths of pid's parents,
+// nearest first. Apps such as Anki hand audio playback to a child mpv, so the
+// stream owner alone is not enough to recognise the app.
+func procAncestors(pid int) []string {
+	var tokens []string
+	seen := make(map[int]struct{}, maxAncestorDepth)
+	for depth := 0; depth < maxAncestorDepth; depth++ {
+		parent, ok := procParent(pid)
+		if !ok || parent <= 1 {
+			break
+		}
+		if _, duplicate := seen[parent]; duplicate {
+			break
+		}
+		seen[parent] = struct{}{}
+		if name := procName(parent); name != "" {
+			tokens = append(tokens, name)
+		}
+		if path := procExe(parent); path != "" {
+			tokens = append(tokens, path)
+		}
+		pid = parent
+	}
+	return tokens
+}
+
+// procParent reads the parent PID (field 4) from /proc/<pid>/stat. The command
+// name in field 2 is parenthesised and may contain spaces or parentheses, so
+// parsing starts after the final ')'.
+func procParent(pid int) (int, bool) {
+	if pid <= 0 {
+		return 0, false
+	}
+	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat")
+	if err != nil {
+		return 0, false
+	}
+	index := strings.LastIndex(string(data), ")")
+	if index < 0 {
+		return 0, false
+	}
+	fields := strings.Fields(string(data[index+1:]))
+	if len(fields) < 2 {
+		return 0, false
+	}
+	parent, err := strconv.Atoi(fields[1])
+	if err != nil || parent <= 0 {
+		return 0, false
+	}
+	return parent, true
+}
+
+// procName reads the short command name. It is capped at 15 bytes by Linux,
+// which is fine for substring bypass matching.
+func procName(pid int) string {
+	if pid <= 0 {
+		return ""
+	}
+	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/comm")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
 }
 
 func lastLine(text string) string {

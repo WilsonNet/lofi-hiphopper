@@ -227,8 +227,10 @@ hold_mode: stop
 
 # Apps that should never interrupt lofi. Entries match process name,
 # bundle ID (Flatpak app ID on Linux), or executable path, case-insensitively.
+# On Linux the parent process is checked too, so "anki" covers the child mpv
+# that Anki plays audio through.
 # macOS example: ["CoreSimulator", "com.apple.Music"]
-# Linux example: ["cava", "easyeffects"]
+# Linux example: ["anki", "cava", "easyeffects"]
 bypass_apps: []
 
 radios:

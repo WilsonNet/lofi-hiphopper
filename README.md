@@ -28,8 +28,8 @@ It is a Charm Bubble Tea TUI with six animated spectrum visualizers.
 - Checks GitHub releases on launch. When a newer release exists, `u` appears
   in the footer; `u` opens an update dialog and can install and restart.
 - Ignores its own player, so it never pauses itself.
-- Lets you bypass apps that should never interrupt lofi, such as simulators or
-  background tools.
+- Lets you bypass apps that should never interrupt lofi, such as Anki,
+  simulators, or background tools.
 - Keeps filling silence for as long as the TUI is open.
 - Lets you mute, change volume, pick a radio, or change visualizers from the
   keyboard or mouse.
@@ -70,7 +70,7 @@ The installer puts the binary in `~/.local/bin`. If that directory is not on
 your `PATH`, it prints the line to add. Pin a release or choose a location with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.5.0
+curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --version v0.5.1
 curl -fsSL https://raw.githubusercontent.com/WilsonNet/lofi-hiphopper/main/install.sh | bash -s -- --prefix /opt/homebrew
 ```
 
@@ -178,12 +178,14 @@ hold_mode: stop
 ```
 
 To ignore an app completely, list a process name, bundle ID (Flatpak app ID on
-Linux), or path substring:
+Linux), or path substring. On Linux the parent process is checked too, so
+`anki` covers the child `mpv` that Anki plays audio through:
 
 ```yaml
 bypass_apps:
   - "CoreSimulator"
   - "com.example.MyApp"
+  - "anki"
 ```
 
 A radio and shortcut example:

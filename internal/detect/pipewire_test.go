@@ -38,7 +38,7 @@ func TestParsePipeWireDump(t *testing.T) {
 		t.Fatalf("got %d processes, want %d: %+v", len(processes), len(want), processes)
 	}
 	for i := range want {
-		if processes[i] != want[i] {
+		if !reflect.DeepEqual(processes[i], want[i]) {
 			t.Errorf("process %d = %+v, want %+v", i, processes[i], want[i])
 		}
 	}

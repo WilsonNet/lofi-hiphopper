@@ -160,6 +160,10 @@ radios:
 2. Start the app while a simulator process is producing output.
 3. Confirm detection ignores it and playback starts.
 4. Confirm a non-bypassed app still causes a hold.
+5. On Linux, confirm parent matching: Anki plays through a child `mpv`, so
+   `bypass_apps: ["anki"]` keeps lofi playing while an Anki card speaks. The
+   integration test `TestLinuxAudioProbeBypassesAnkiStyleParent` reproduces the
+   same shape with a silent mpv child.
 
 **Configuration**
 

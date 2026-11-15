@@ -106,8 +106,8 @@ still works. Linux builds need no cgo.
 ### Classification
 
 `AssessWithBypass` filters out the player's own mpv PID and any process matching
-`bypass_apps` (case-insensitive substring of name, bundle ID, or executable
-path), then classifies:
+`bypass_apps` (case-insensitive substring of name, bundle ID, executable path,
+or, on Linux, an ancestor's name or path), then classifies:
 
 - any input process -> `Call`;
 - otherwise any output process -> `OtherAudio`;

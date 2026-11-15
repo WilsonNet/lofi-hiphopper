@@ -136,10 +136,16 @@ and the path is the process executable:
 
 ```yaml
 bypass_apps:
+  - "anki"
   - "easyeffects"
   - "com.discordapp.Discord"
   - "/usr/bin/cava"
 ```
+
+On Linux the parent process chain is checked as well, nearest first. Some apps
+hand playback to a helper: Anki plays audio through a child `mpv`, so the sound
+server reports `mpv` as the stream owner. Listing `anki` covers it anyway, and
+so does the Anki executable path.
 
 This is useful for the iOS Simulator or helper apps that keep an output stream
 open even when you cannot hear them. Linux capture streams that only read

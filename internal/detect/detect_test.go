@@ -228,6 +228,43 @@ func TestBypassAlsoSilencesInput(t *testing.T) {
 	}
 }
 
+func TestAssessWithBypassMatchesAncestor(t *testing.T) {
+	// Anki on Linux hands playback to a child mpv, so the stream owner is
+	// mpv while the app the user knows is the parent process.
+	process := Process{
+		PID:       7530,
+		Name:      "lofi-bypass-test",
+		Path:      "/usr/bin/mpv",
+		Ancestors: []string{"anki", "/usr/local/share/anki/anki"},
+		Output:    true,
+	}
+	if got := Assess([]Process{process}).Activity; got != OtherAudio {
+		t.Fatalf("ancestry leaked into the raw assessment: %v", got)
+	}
+	if got := AssessWithBypass([]Process{process}, []string{"anki"}).Activity; got != Silence {
+		t.Fatalf("ancestor bypass = %v, want silence", got)
+	}
+	if got := AssessWithBypass([]Process{process}, []string{"ANKI"}).Activity; got != Silence {
+		t.Fatalf("ancestor bypass is not case-insensitive: %v", got)
+	}
+	if got := AssessWithBypass([]Process{process}, []string{"spotify"}).Activity; got != OtherAudio {
+		t.Fatalf("unrelated pattern bypassed the stream: %v", got)
+	}
+}
+
+func TestAssessWithBypassAncestorAlsoSilencesInput(t *testing.T) {
+	got := AssessWithBypass([]Process{{
+		PID:       42,
+		Name:      "mpv",
+		Ancestors: []string{"anki"},
+		Input:     true,
+		Output:    true,
+	}}, []string{"anki"})
+	if got.Activity != Silence {
+		t.Fatalf("bypassed ancestor input activity = %v", got.Activity)
+	}
+}
+
 func TestAssessIgnoresSystemVoiceDaemon(t *testing.T) {
 	daemon := Process{PID: 1311, Name: "corespeechd", Path: "/System/Library/PrivateFrameworks/CoreSpeech.framework/corespeechd", Input: true}
 	if got := Assess([]Process{daemon}).Activity; got != Silence {
